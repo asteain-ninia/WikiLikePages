@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WikiLikePages Prototype</title>
+  <meta
+    name="description"
+    content="WikiLikePages のWikipedia風トップページ試作。検索、カテゴリ、最近の更新、投稿導線の見え方を確認できます。"
+  >
+  <link rel="stylesheet" href="prototype-ornate.css">
+  <script defer src="prototype-ornate.js"></script>
+</head>
+<body>
+  <div class="page-noise" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#">
+        <span class="brand-mark" aria-hidden="true">W</span>
+        <span class="brand-copy">
+          <strong>WikiLikePages</strong>
+          <span>共同創作設定を百科事典のように読むための試作トップページ</span>
+        </span>
+      </a>
+
+      <nav class="top-nav" aria-label="主要ナビゲーション">
+        <a href="#featured">注目</a>
+        <a href="#popular">記事一覧</a>
+        <a href="#updates">更新</a>
+        <a href="#contribute">投稿案内</a>
+      </nav>
+
+      <div class="header-actions">
+        <button class="ghost-button" id="random-button" type="button">ランダムページ</button>
+        <a class="primary-button" href="#contribute">投稿案内</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="hero panel tone-sage">
+      <div class="hero-copy">
+        <p class="eyebrow">Prototype / Top Page</p>
+        <h1>百科事典の入口のような、共同創作Wikiのトップページ</h1>
+        <p class="hero-lead">
+          「調べる」「辿る」「最近の更新を追う」を1画面にまとめた、Wikipedia風のホーム画面です。
+          内部機能はまだ仮ですが、検索、カテゴリ導線、更新一覧、投稿ルートの見え方を確認できます。
+        </p>
+
+        <form class="search-form" id="search-form" role="search">
+          <label class="sr-only" for="search-input">ページを検索</label>
+          <input
+            id="search-input"
+            name="search"
+            type="search"
+            placeholder="例: 白磁海 / 星舟連盟 / 帝国暦712年"
+            autocomplete="off"
+          >
+          <button type="submit">検索</button>
+        </form>
+
+        <div class="search-results" id="search-results" aria-live="polite"></div>
+
+        <div class="quick-links" aria-label="クイックリンク">
+          <button class="quick-link" type="button" data-filter-shortcut="all">全体を見る</button>
+          <button class="quick-link" type="button" data-filter-shortcut="world">世界設定</button>
+          <button class="quick-link" type="button" data-filter-shortcut="character">人物</button>
+          <button class="quick-link" type="button" data-filter-shortcut="organization">組織</button>
+          <button class="quick-link" type="button" data-filter-shortcut="timeline">年表</button>
+        </div>
+      </div>
+
+      <aside class="hero-aside">
+        <div class="hero-stats">
+          <div class="stat-card">
+            <span>公開ページ</span>
+            <strong>248</strong>
+          </div>
+          <div class="stat-card">
+            <span>主要カテゴリ</span>
+            <strong>4</strong>
+          </div>
+          <div class="stat-card">
+            <span>今週の更新</span>
+            <strong>16</strong>
+          </div>
+          <div class="stat-card">
+            <span>下書き</span>
+            <strong>17</strong>
+          </div>
+        </div>
+
+        <div class="today-note">
+          <p class="today-label">今日のおすすめ</p>
+          <h2 id="hero-pick-title">白磁海</h2>
+          <p id="hero-pick-summary">
+            交易都市と灯台列島を抱える内海。港湾国家の思惑が集中する、世界設定の中核ページです。
+          </p>
+          <a class="text-link" href="#preview">右カラムでプレビュー</a>
+        </div>
+      </aside>
+    </section>
+
+    <section class="category-strip" aria-label="カテゴリフィルタ">
+      <button class="filter-chip is-active" type="button" data-filter="all">すべて</button>
+      <button class="filter-chip" type="button" data-filter="world">世界設定</button>
+      <button class="filter-chip" type="button" data-filter="character">人物</button>
+      <button class="filter-chip" type="button" data-filter="organization">組織</button>
+      <button class="filter-chip" type="button" data-filter="timeline">年表</button>
+    </section>
+
+    <section class="layout-grid">
+      <div class="main-column">
+        <section class="panel tone-sage" id="featured">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">注目の記事</p>
+              <h2 id="featured-title">白磁海</h2>
+            </div>
+            <a class="section-link" href="#preview">詳細プレビュー</a>
+          </div>
+
+          <div class="featured-layout">
+            <div class="featured-visual" aria-hidden="true">
+              <div class="compass-ring"></div>
+              <div class="compass-core"></div>
+              <div class="wave-line wave-line-top"></div>
+              <div class="wave-line wave-line-bottom"></div>
+            </div>
+
+            <div class="featured-copy">
+              <p id="featured-summary">
+                白磁海は内陸交易の動脈であり、灯台列島、潮見港、星舟連盟の物流を一手に引き受ける海域です。
+                海図の改訂や封鎖年表といった周辺ページへの導線が多く、トップページの看板記事に向いています。
+              </p>
+
+              <div class="meta-row">
+                <span class="meta-pill" id="featured-category">世界設定</span>
+                <span class="meta-text" id="featured-updated">最終更新 2026年3月15日</span>
+              </div>
+
+              <div class="tag-row" id="featured-tags"></div>
+
+              <div class="featured-actions">
+                <button class="text-link" id="featured-preview" type="button">この記事をプレビュー</button>
+                <a class="text-link" href="#contribute">このテーマで投稿する</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel tone-blue" id="popular">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">注目のページ</p>
+              <h2>カテゴリ別サンプル記事</h2>
+            </div>
+            <p class="section-caption">
+              ダミーデータを並べた試作一覧です。検索・絞り込み・プレビューの雰囲気を確認できます。
+            </p>
+          </div>
+
+          <div class="article-grid" id="article-grid"></div>
+        </section>
+
+        <div class="split-row">
+          <section class="panel tone-amber" id="updates">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">最近の更新</p>
+                <h2>更新の流れが見える一覧</h2>
+              </div>
+            </div>
+
+            <ul class="update-list" id="update-list"></ul>
+          </section>
+
+          <section class="panel tone-rose" id="contribute">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">投稿案内</p>
+                <h2>参加者ごとの入口</h2>
+              </div>
+            </div>
+
+            <div class="lane-grid">
+              <article class="lane-card">
+                <span class="lane-index">01</span>
+                <h3>PR 投稿</h3>
+                <p>Obsidian で編集し、Pull Request でレビューに回す標準ルートです。</p>
+              </article>
+              <article class="lane-card">
+                <span class="lane-index">02</span>
+                <h3>Issue Form</h3>
+                <p>Git は触らず、記事データだけ送る軽量投稿ルートです。</p>
+              </article>
+              <article class="lane-card">
+                <span class="lane-index">03</span>
+                <h3>メール受付</h3>
+                <p>アカウントなし参加者向けの最低限の投稿窓口を想定しています。</p>
+              </article>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel tone-slate" id="journey">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">年表でたどる</p>
+              <h2>物語の読み進め方を示す帯</h2>
+            </div>
+            <p class="section-caption">トップページでも時間軸を入口にできる、という見せ方の試作です。</p>
+          </div>
+
+          <div class="timeline-grid">
+            <article class="timeline-card">
+              <span class="timeline-year">706</span>
+              <h3>灯台列島の独立宣言</h3>
+              <p>白磁海沿岸の交易再編が始まり、港湾国家の勢力図が動き始める。</p>
+            </article>
+            <article class="timeline-card">
+              <span class="timeline-year">712</span>
+              <h3>航路封鎖と海図改訂</h3>
+              <p>帝国暦712年の航路封鎖が発生。主要な関連ページへの読書導線になる年表節。</p>
+            </article>
+            <article class="timeline-card">
+              <span class="timeline-year">718</span>
+              <h3>星舟連盟の再編会議</h3>
+              <p>組織ページ、人物ページ、事件ページを横断する主要トピックとして配置。</p>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <aside class="side-column">
+        <section class="panel tone-ink preview-panel" id="preview">
+          <div class="section-head preview-head">
+            <div>
+              <p class="section-kicker">ページプレビュー</p>
+              <p class="breadcrumb" id="preview-breadcrumb">World / 海域</p>
+            </div>
+          </div>
+
+          <h2 id="preview-title">白磁海</h2>
+          <p class="preview-summary" id="preview-summary">
+            内海交易圏の中心海域。潮見港、灯台列島、星舟連盟の補給線が交差する。
+          </p>
+
+          <div class="preview-metrics">
+            <div class="metric-box">
+              <span>最終更新</span>
+              <strong id="preview-updated">2026年3月15日</strong>
+            </div>
+            <div class="metric-box">
+              <span>タグ</span>
+              <strong id="preview-tag-count">3件</strong>
+            </div>
+            <div class="metric-box">
+              <span>バックリンク</span>
+              <strong id="preview-backlinks">18件</strong>
+            </div>
+          </div>
+
+          <div class="preview-excerpt">
+            <p class="preview-label">抜粋</p>
+            <blockquote id="preview-excerpt">
+              白磁海を渡る船団は、灯台列島の灯火を道標にしながら潮位と政治の両方を読む。
+            </blockquote>
+          </div>
+
+          <div class="tag-row" id="preview-tags"></div>
+
+          <div class="related-block">
+            <h3>関連ページ</h3>
+            <div class="link-cloud" id="preview-links"></div>
+          </div>
+        </section>
+
+        <section class="panel tone-paper">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">最近の変更</p>
+              <h2>更新ログ</h2>
+            </div>
+          </div>
+
+          <ul class="changes-list" id="changes-list"></ul>
+        </section>
+
+        <section class="panel tone-paper">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">閲覧の入口</p>
+              <h2>カテゴリ</h2>
+            </div>
+          </div>
+
+          <div class="category-list">
+            <button class="category-link" type="button" data-filter-shortcut="world">
+              <span>世界設定</span>
+              <strong>72</strong>
+            </button>
+            <button class="category-link" type="button" data-filter-shortcut="character">
+              <span>人物</span>
+              <strong>96</strong>
+            </button>
+            <button class="category-link" type="button" data-filter-shortcut="organization">
+              <span>組織</span>
+              <strong>34</strong>
+            </button>
+            <button class="category-link" type="button" data-filter-shortcut="timeline">
+              <span>年表</span>
+              <strong>46</strong>
+            </button>
+          </div>
+        </section>
+
+        <section class="panel tone-paper note-panel">
+          <div class="note-block">
+            <span class="note-title">MVPメモ</span>
+            <p>検索、バックリンク、カテゴリ、最近の変更をトップページ時点で見せる構成を想定。</p>
+          </div>
+          <div class="note-block">
+            <span class="note-title">公開ルール</span>
+            <p><code>draft: true</code> の記事は非公開。レビュー通過後のみ GitHub Pages に反映。</p>
+          </div>
+          <div class="note-block">
+            <span class="note-title">編集体験</span>
+            <p>ブラウザ内編集ではなく、Obsidian で書いて Pages で読む前提のUIです。</p>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>WikiLikePages prototype</p>
+      <p>Wikipedia風トップページの見た目確認用モック。内部実装や永続化はまだ未着手です。</p>
+    </div>
+  </footer>
+</body>
+</html>
