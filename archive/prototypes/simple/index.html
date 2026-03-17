@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WikiLikePages - メインページ試作</title>
+  <meta
+    name="description"
+    content="WikiLikePages のシンプルなWikipedia風トップページ試作。"
+  >
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true">W</div>
+        <div class="brand-copy">
+          <strong>WikiLikePages</strong>
+          <span>共同創作のための資料集</span>
+        </div>
+      </div>
+
+      <div class="header-tools">
+        <nav class="utility-nav" aria-label="補助ナビゲーション">
+          <a href="#welcome">メインページ</a>
+          <a href="#feature">選り抜き記事</a>
+          <a href="#categories">カテゴリ</a>
+          <a href="prototype-ornate.html">前案</a>
+        </nav>
+
+        <form class="search-form" id="search-form" role="search">
+          <label class="sr-only" for="search-input">WikiLikePages を検索</label>
+          <input
+            id="search-input"
+            type="search"
+            placeholder="WikiLikePages を検索"
+            autocomplete="off"
+          >
+          <button type="submit">検索</button>
+          <button class="secondary-button" id="random-button" type="button">おまかせ表示</button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="page-title">
+      <h1>メインページ</h1>
+      <p>Wikipedia風に寄せた簡素なトップページ案です。</p>
+    </div>
+
+    <section class="welcome-box" id="welcome">
+      <div class="welcome-main">
+        <h2>WikiLikePagesへようこそ</h2>
+        <p>
+          ここは共同創作向けの静的Wikiを想定した試作ページです。現在、
+          <strong>248本</strong> の公開記事と <strong>4つ</strong> の主要カテゴリを想定しています。
+        </p>
+        <p class="status-line" id="status-line">選り抜き記事として「白磁海」を表示しています。</p>
+      </div>
+      <div class="welcome-side">
+        <p><strong>備考:</strong> 前回の装飾強めの案は残してあります。</p>
+        <p><a href="prototype-ornate.html">前の案を見る</a></p>
+      </div>
+    </section>
+
+    <div class="search-results" id="search-results" hidden></div>
+
+    <div class="main-grid">
+      <section class="portal-box portal-feature" id="feature">
+        <h2>選り抜き記事</h2>
+        <article class="feature-article" id="featured-article"></article>
+      </section>
+
+      <section class="portal-box portal-news">
+        <h2>新着記事</h2>
+        <ul class="link-list" id="new-articles"></ul>
+      </section>
+    </div>
+
+    <div class="main-grid">
+      <section class="portal-box portal-events">
+        <h2>最近の更新</h2>
+        <ul class="link-list" id="recent-updates"></ul>
+      </section>
+
+      <section class="portal-box portal-help">
+        <h2>参加案内</h2>
+        <ul class="plain-list">
+          <li><strong>PR投稿:</strong> Obsidianで編集し、Pull Requestでレビュー。</li>
+          <li><strong>Issue Form:</strong> Gitを触らず記事データだけ送る簡易ルート。</li>
+          <li><strong>メール受付:</strong> アカウントがない参加者向けの最低限の窓口。</li>
+        </ul>
+      </section>
+    </div>
+
+    <section class="portal-box portal-categories" id="categories">
+      <h2>カテゴリから探す</h2>
+      <div class="category-grid">
+        <article class="category-card">
+          <h3><a href="#">世界設定</a></h3>
+          <p>地理、都市、海域、文化、用語集などの基礎設定。</p>
+        </article>
+        <article class="category-card">
+          <h3><a href="#">人物</a></h3>
+          <p>登場人物、役職、家系、別名、所属先を整理するページ群。</p>
+        </article>
+        <article class="category-card">
+          <h3><a href="#">組織</a></h3>
+          <p>国家、商会、同盟、行政機関、宗教組織などのまとめ。</p>
+        </article>
+        <article class="category-card">
+          <h3><a href="#">年表</a></h3>
+          <p>事件や変遷を時系列で整理し、関連ページへ辿る入口。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="portal-box portal-process">
+      <h2>執筆と公開の流れ</h2>
+      <ol class="process-list">
+        <li>Obsidian で記事を書く</li>
+        <li>Pull Request か投稿フォームで提出する</li>
+        <li>レビュー後に main へマージする</li>
+        <li>GitHub Pages に公開する</li>
+      </ol>
+    </section>
+  </main>
+</body>
+</html>
