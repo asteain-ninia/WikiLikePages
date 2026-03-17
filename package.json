@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:content": "node scripts/generate-content-data.mjs",
+    "build:site": "node scripts/build-site.mjs",
+    "dev": "node scripts/dev-server.mjs",
+    "serve": "node scripts/dev-server.mjs",
     "test": "node --test"
   }
 }

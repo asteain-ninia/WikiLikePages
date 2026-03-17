@@ -44,6 +44,7 @@ export function searchArticles(entries, query) {
       ...(entry.keywords ?? []),
       ...((entry.sections ?? []).flatMap((section) => [
         section.heading,
+        section.sourceHeading,
         ...(section.paragraphs ?? []),
       ])),
     ]

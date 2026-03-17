@@ -1,4 +1,4 @@
-import { articles } from "./data/articles.js";
+import { articles, contentBuildInfo } from "./data/articles.js";
 import { siteConfig } from "./data/site-config.js";
 import {
   buildHomePageModel,
@@ -64,9 +64,13 @@ const state = {
 
 function renderWelcomeSummary() {
   const { articleCount, categoryCount, latestUpdatedDate } = homePageModel.stats;
+  const contentLabel = contentBuildInfo.usingSamplesFallback ? "サンプル原稿" : "公開原稿";
+  const fallbackNote = contentBuildInfo.usingSamplesFallback
+    ? " 現在は content/samples/ の原稿を表示確認用データとして読み込んでいます。"
+    : "";
   elements.welcomeSummary.textContent =
-    `現在 ${articleCount} 本の記事と ${categoryCount} つの主要カテゴリを公開候補として整理しています。` +
-    ` 最新更新日は ${formatDisplayDate(latestUpdatedDate)} です。`;
+    `現在 ${articleCount} 本の${contentLabel}と ${categoryCount} つの主要カテゴリを整理しています。` +
+    ` 最新更新日は ${formatDisplayDate(latestUpdatedDate)} です。${fallbackNote}`;
 }
 
 function renderFeaturedState() {

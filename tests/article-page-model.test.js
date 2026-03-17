@@ -143,6 +143,40 @@ test("buildWikiGraph collects backlinks, missing pages and disambiguation pages"
   );
 });
 
+test("buildWikiGraph also resolves links that appear in section headings", () => {
+  const graph = buildWikiGraph([
+    {
+      id: "sea",
+      title: "白磁海",
+      category: "世界設定",
+      created: "2026-03-10",
+      updated: "2026-03-15",
+      summary: "海域ページ",
+      sections: [],
+    },
+    {
+      id: "guide",
+      title: "白磁海案内",
+      category: "世界設定",
+      created: "2026-03-11",
+      updated: "2026-03-14",
+      summary: "案内ページ",
+      sections: [
+        {
+          heading: "白磁海",
+          sourceHeading: "[[白磁海]]",
+          paragraphs: [],
+        },
+      ],
+    },
+  ]);
+
+  assert.deepEqual(
+    graph.backlinksById.sea.map((entry) => entry.id),
+    ["guide"]
+  );
+});
+
 test("buildWikiTextSegments turns unresolved links into missing-page routes", () => {
   const graph = buildWikiGraph(fixtureEntries);
   const segments = buildWikiTextSegments("本文 [[白磁航路台帳]] 末尾", graph);

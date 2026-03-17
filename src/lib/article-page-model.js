@@ -289,7 +289,8 @@ export function buildWikiGraph(entries) {
 
   for (const entry of entries) {
     for (const section of entry.sections ?? []) {
-      for (const paragraph of section.paragraphs ?? []) {
+      const sourceTexts = [section.sourceHeading, ...(section.paragraphs ?? [])].filter(Boolean);
+      for (const paragraph of sourceTexts) {
         for (const link of extractWikiLinks(paragraph)) {
           const resolution = resolveArticleReference(referenceIndex, entryById, link.pageTitle);
 

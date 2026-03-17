@@ -1,0 +1,44 @@
+import { access, cp, mkdir, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, "..");
+const distRoot = path.join(projectRoot, "dist");
+
+const requiredEntries = ["index.html", "src"];
+const optionalEntries = ["content/assets", "CNAME", "favicon.ico", "robots.txt"];
+
+function pathExists(targetPath) {
+  return access(targetPath).then(
+    () => true,
+    () => false
+  );
+}
+
+execFileSync("node", ["scripts/generate-content-data.mjs"], {
+  cwd: projectRoot,
+  stdio: "inherit",
+});
+
+await rm(distRoot, { recursive: true, force: true });
+await mkdir(distRoot, { recursive: true });
+
+for (const entry of requiredEntries) {
+  await cp(path.join(projectRoot, entry), path.join(distRoot, entry), {
+    recursive: true,
+  });
+}
+
+for (const entry of optionalEntries) {
+  const sourcePath = path.join(projectRoot, entry);
+  if (await pathExists(sourcePath)) {
+    await cp(sourcePath, path.join(distRoot, entry), { recursive: true });
+  }
+}
+
+await writeFile(path.join(distRoot, ".nojekyll"), "", "utf8");
+
+console.log(`Built static site at ${path.relative(projectRoot, distRoot)}`);

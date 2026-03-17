@@ -200,6 +200,27 @@ input {
   background: var(--color-surface);
 }
 
+.protocol-warning {
+  display: none;
+  border: 1px solid #d33;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #fff4f4;
+}
+
+.protocol-warning__title {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.protocol-warning p:last-child {
+  margin-bottom: 0;
+}
+
+html[data-file-protocol="true"] .protocol-warning {
+  display: block;
+}
+
 .welcome-box {
   display: grid;
   grid-template-columns: minmax(0, 1.8fr) minmax(240px, 0.8fr);

@@ -15,8 +15,18 @@ GitHub Pages で公開しつつ、Wikiライクな執筆体験は外部エディ
 
 ## 実行メモ
 
-- トップページは ES Modules を使っているため、HTTP 経由で確認する前提です
+- トップページは ES Modules を使っているため、`file://` ではなく `npm run serve` で HTTP 経由起動します
+- 既定の起動先は `http://localhost:4173` です
+- `content/` の原稿を画面データへ反映するには `npm run build:content` を実行します
+- Pages に載せる公開物は `npm run build:site` で `dist/` へ出力します
 - 自動テストは `npm test` で実行できます
+
+## GitHub Pages
+
+- デプロイ用ワークフローは [.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml) です
+- `main` への push または手動実行で、テスト後に `build:site` を走らせて GitHub Pages へデプロイします
+- リポジトリの `Settings > Pages` で `Source` を `GitHub Actions` に切り替えてください
+- 原稿の日付生成で `git log --follow` を使うため、Actions の checkout は履歴を省略しない設定にしています
 
 ## ドキュメント
 

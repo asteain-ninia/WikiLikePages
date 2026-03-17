@@ -1,11 +1,15 @@
 export const siteConfig = {
-  preferredFeaturedId: "white-porcelain-sea",
+  preferredFeaturedId: "samples/デーレ共和国",
   newArticleLimit: 4,
   recentUpdateLimit: 4,
   categoryDefinitions: [
     {
-      name: "世界設定",
-      description: "地理、都市、海域、文化、用語集などの基礎設定を束ねるカテゴリです。",
+      name: "国家",
+      description: "国家、都市国家、同君王国、帝国などのページをまとめるカテゴリです。",
+    },
+    {
+      name: "地域",
+      description: "文化圏、地方、諸国、海域などの広域ページをまとめます。",
     },
     {
       name: "人物",
@@ -13,7 +17,7 @@ export const siteConfig = {
     },
     {
       name: "組織",
-      description: "国家、商会、行政機関、宗教組織などの制度面をまとめます。",
+      description: "商会、行政機関、宗教組織などの制度面をまとめます。",
     },
     {
       name: "年表",
@@ -37,13 +41,14 @@ export const siteConfig = {
   processSteps: [
     "Obsidian で記事原稿を整える",
     "Pull Request または投稿箱経由で提出する",
-    "レビューでリンクとfrontmatterを確認する",
+    "レビューでリンクと frontmatter を確認する",
     "承認後にGitHub Pagesへ反映する",
   ],
   implementationNotes: [
     "2026-03-17 時点でルート直下の試作品を archive/prototypes/ に隔離しました。",
-    "トップページはデータ層、モデル層、描画層を分け、将来のMarkdown連携に備えています。",
-    "検索、カテゴリ集計、選り抜き記事選定は純粋関数化し、Node組み込みテストで検証します。",
-    "次段階では Quartz もしくは同等の静的生成フローへ接続できる形へ寄せます。",
+    "content/ 配下の Markdown 原稿を正規化して、トップページと記事詳細に流し込む取り込み層を追加しました。",
+    "検索、カテゴリ集計、内部リンク解決は純粋関数化し、Node 組み込みテストで検証します。",
+    "frontmatter がある原稿はそれを優先し、先頭テンプレートは最小限のカテゴリ推定に利用します。",
+    "次段階ではテンプレート変換拡張と HTML 生成フローを追加します。",
   ],
 };

@@ -9,6 +9,11 @@
     content="WikiLikePages の正式実装を開始するためのWikipedia風メインページ。"
   >
   <link rel="stylesheet" href="src/styles.css">
+  <script>
+    if (window.location.protocol === "file:") {
+      document.documentElement.dataset.fileProtocol = "true";
+    }
+  </script>
   <script type="module" src="src/main.js"></script>
 </head>
 <body>
@@ -47,6 +52,14 @@
   </header>
 
   <main class="page">
+    <aside class="protocol-warning" aria-live="polite">
+      <p class="protocol-warning__title">このページは <code>file://</code> では起動できません。</p>
+      <p>
+        ES Modules を使っているため、<code>npm run serve</code> を実行して
+        <code>http://localhost:4173</code> から開いてください。
+      </p>
+    </aside>
+
     <div class="page-title">
       <h1 id="page-heading">メインページ</h1>
       <p id="page-lead">試作品を切り離し、正式実装の骨格へ置き換えた初期版です。</p>
