@@ -48,77 +48,81 @@
 
   <main class="page">
     <div class="page-title">
-      <h1>メインページ</h1>
-      <p>試作品を切り離し、正式実装の骨格へ置き換えた初期版です。</p>
+      <h1 id="page-heading">メインページ</h1>
+      <p id="page-lead">試作品を切り離し、正式実装の骨格へ置き換えた初期版です。</p>
     </div>
-
-    <section class="welcome-box" id="overview" aria-labelledby="welcome-heading">
-      <div class="welcome-box__main">
-        <h2 id="welcome-heading">WikiLikePagesへようこそ</h2>
-        <p id="welcome-summary"></p>
-        <p class="status-line" id="featured-status"></p>
-        <p class="status-line" id="preview-status"></p>
-      </div>
-
-      <aside class="welcome-box__aside" aria-labelledby="direction-heading">
-        <h2 id="direction-heading">現在の方針</h2>
-        <ul class="plain-list">
-          <li>試作品は <code>archive/prototypes/</code> に隔離済みです。</li>
-          <li>ルート配下は正式実装と設計資料だけを保持します。</li>
-          <li>検索、選択、一覧生成はテスト可能な純粋関数で組み立てます。</li>
-        </ul>
-      </aside>
-    </section>
 
     <section class="search-results" id="search-results" hidden aria-live="polite"></section>
 
-    <div class="main-grid">
-      <section class="portal-box portal-box--featured" id="featured">
-        <h2>選り抜き記事</h2>
-        <article class="portal-box__body feature-article" id="featured-article"></article>
-      </section>
-
-      <section class="portal-box portal-box--new">
-        <h2>新着記事</h2>
-        <div class="portal-box__body">
-          <ul class="entry-list" id="new-articles"></ul>
+    <div id="home-view">
+      <section class="welcome-box" id="overview" aria-labelledby="welcome-heading">
+        <div class="welcome-box__main">
+          <h2 id="welcome-heading">WikiLikePagesへようこそ</h2>
+          <p id="welcome-summary"></p>
+          <p class="status-line" id="featured-status"></p>
+          <p class="status-line" id="preview-status"></p>
         </div>
+
+        <aside class="welcome-box__aside" aria-labelledby="direction-heading">
+          <h2 id="direction-heading">現在の方針</h2>
+          <ul class="plain-list">
+            <li>試作品は <code>archive/prototypes/</code> に隔離済みです。</li>
+            <li>ルート配下は正式実装と設計資料だけを保持します。</li>
+            <li>検索、選択、一覧生成はテスト可能な純粋関数で組み立てます。</li>
+          </ul>
+        </aside>
       </section>
-    </div>
 
-    <div class="main-grid">
-      <section class="portal-box portal-box--updates" id="updates">
-        <h2>最近の更新</h2>
-        <div class="portal-box__body">
-          <ul class="entry-list entry-list--stacked" id="recent-updates"></ul>
-        </div>
-      </section>
+      <div class="main-grid">
+        <section class="portal-box portal-box--featured" id="featured">
+          <h2>選り抜き記事</h2>
+          <article class="portal-box__body feature-article" id="featured-article"></article>
+        </section>
 
-      <section class="portal-box portal-box--guides" id="participation">
-        <h2>参加案内</h2>
-        <div class="portal-box__body">
-          <ul class="plain-list" id="participation-list"></ul>
-          <ol class="process-list" id="process-list"></ol>
-        </div>
-      </section>
-    </div>
-
-    <section class="portal-box portal-box--preview" id="article-preview">
-      <h2>記事プレビュー</h2>
-      <article class="portal-box__body preview-article" id="article-preview-card"></article>
-    </section>
-
-    <section class="portal-box" id="categories">
-      <h2>カテゴリから探す</h2>
-      <div class="portal-box__body category-grid" id="category-grid"></div>
-    </section>
-
-    <section class="portal-box" id="implementation">
-      <h2>実装開始メモ</h2>
-      <div class="portal-box__body">
-        <ul class="plain-list" id="implementation-notes"></ul>
+        <section class="portal-box portal-box--new">
+          <h2>新着記事</h2>
+          <div class="portal-box__body">
+            <ul class="entry-list" id="new-articles"></ul>
+          </div>
+        </section>
       </div>
-    </section>
+
+      <div class="main-grid">
+        <section class="portal-box portal-box--updates" id="updates">
+          <h2>最近の更新</h2>
+          <div class="portal-box__body">
+            <ul class="entry-list entry-list--stacked" id="recent-updates"></ul>
+          </div>
+        </section>
+
+        <section class="portal-box portal-box--guides" id="participation">
+          <h2>参加案内</h2>
+          <div class="portal-box__body">
+            <ul class="plain-list" id="participation-list"></ul>
+            <ol class="process-list" id="process-list"></ol>
+          </div>
+        </section>
+      </div>
+
+      <section class="portal-box portal-box--preview" id="article-preview">
+        <h2>記事プレビュー</h2>
+        <article class="portal-box__body preview-article" id="article-preview-card"></article>
+      </section>
+
+      <section class="portal-box" id="categories">
+        <h2>カテゴリから探す</h2>
+        <div class="portal-box__body category-grid" id="category-grid"></div>
+      </section>
+
+      <section class="portal-box" id="implementation">
+        <h2>実装開始メモ</h2>
+        <div class="portal-box__body">
+          <ul class="plain-list" id="implementation-notes"></ul>
+        </div>
+      </section>
+    </div>
+
+    <section class="detail-view" id="detail-view" hidden aria-live="polite"></section>
   </main>
 </body>
 </html>

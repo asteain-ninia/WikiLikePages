@@ -6,6 +6,7 @@ GitHub Pages で公開しつつ、Wikiライクな執筆体験は外部エディ
 
 ## 現在の構成
 
+- 原稿とアセット: `content/`
 - 画面本体: `index.html`
 - 実装コード: `src/`
 - 設計資料: `docs/`

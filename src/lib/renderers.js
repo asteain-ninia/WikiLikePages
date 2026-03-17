@@ -1,4 +1,5 @@
 import { formatDisplayDate } from "./home-page-model.js";
+import { buildArticleHref } from "./article-page-model.js";
 
 export function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (character) => {
@@ -19,12 +20,70 @@ export function escapeHtml(value) {
   });
 }
 
-function renderEntryLink(entry) {
-  return `<a href="#article-preview" data-entry-id="${escapeHtml(entry.id)}">${escapeHtml(entry.title)}</a>`;
+function renderEntryLink(entry, options = {}) {
+  const href = options.heading
+    ? buildArticleHref(entry.id, options.heading)
+    : buildArticleHref(entry.id);
+  const className = options.className ? ` class="${escapeHtml(options.className)}"` : "";
+  const label = options.label ?? entry.title;
+
+  return `<a${className} href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
 }
 
 function renderRelatedTitles(titles) {
   return titles.map((title) => `<li>${escapeHtml(title)}</li>`).join("");
+}
+
+function renderParagraphSegments(segments) {
+  return segments
+    .map((segment) => {
+      if (segment.type === "text") {
+        return escapeHtml(segment.value);
+      }
+
+      const classNames = ["wiki-link"];
+      if (segment.status === "missing") {
+        classNames.push("wiki-link--missing");
+      } else if (segment.status === "ambiguous") {
+        classNames.push("wiki-link--ambiguous");
+      }
+
+      return `<a class="${classNames.join(" ")}" href="${escapeHtml(segment.href)}">${escapeHtml(segment.label)}</a>`;
+    })
+    .join("");
+}
+
+function renderEntrySummaryLinks(entries) {
+  if (entries.length === 0) {
+    return '<p class="empty-note">まだ項目がありません。</p>';
+  }
+
+  return `
+    <ul class="plain-list">
+      ${entries
+        .map((entry) => {
+          return `
+            <li>
+              ${renderEntryLink(entry)}
+              <span class="entry-inline-meta"> (${escapeHtml(entry.category)} / ${escapeHtml(formatDisplayDate(entry.updated))})</span>
+            </li>
+          `;
+        })
+        .join("")}
+    </ul>
+  `;
+}
+
+function renderTagList(tags) {
+  if (tags.length === 0) {
+    return '<p class="empty-note">タグはまだ設定されていません。</p>';
+  }
+
+  return `
+    <ul class="tag-list" aria-label="タグ一覧">
+      ${tags.map((tag) => `<li class="tag">${escapeHtml(tag)}</li>`).join("")}
+    </ul>
+  `;
 }
 
 export function renderFeaturedArticle(entry) {
@@ -155,4 +214,196 @@ export function renderProcessSteps(steps) {
 
 export function renderImplementationNotes(notes) {
   return notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("");
+}
+
+export function renderArticlePage(pageModel) {
+  return `
+    <article class="article-page">
+      <nav class="breadcrumbs" aria-label="パンくず">
+        <a href="#overview">メインページ</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span>${escapeHtml(pageModel.category)}</span>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span>${escapeHtml(pageModel.title)}</span>
+      </nav>
+
+      <header class="article-page__header">
+        <p class="article-page__eyebrow">${escapeHtml(pageModel.category)}</p>
+        <h2>${escapeHtml(pageModel.title)}</h2>
+        <p class="article-page__summary">${escapeHtml(pageModel.summary)}</p>
+        <p class="entry-meta">
+          作成 ${escapeHtml(formatDisplayDate(pageModel.created))} / 更新 ${escapeHtml(formatDisplayDate(pageModel.updated))}
+        </p>
+      </header>
+
+      <div class="article-page__layout">
+        <div class="article-page__body">
+          ${pageModel.sections
+            .map((section) => {
+              return `
+                <section class="article-section" id="${escapeHtml(section.anchorId)}">
+                  <h3>${escapeHtml(section.heading)}</h3>
+                  ${section.paragraphs
+                    .map((segments) => `<p>${renderParagraphSegments(segments)}</p>`)
+                    .join("")}
+                </section>
+              `;
+            })
+            .join("")}
+        </div>
+
+        <aside class="article-page__sidebar">
+          <section class="article-sidebox">
+            <h3>タグ</h3>
+            ${renderTagList(pageModel.tags)}
+          </section>
+
+          <section class="article-sidebox">
+            <h3>別名</h3>
+            ${
+              pageModel.aliases.length === 0
+                ? '<p class="empty-note">別名は登録されていません。</p>'
+                : `<ul class="plain-list">${pageModel.aliases
+                    .map((alias) => `<li>${escapeHtml(alias)}</li>`)
+                    .join("")}</ul>`
+            }
+          </section>
+
+          <section class="article-sidebox">
+            <h3>バックリンク</h3>
+            ${renderEntrySummaryLinks(pageModel.backlinks)}
+          </section>
+
+          <section class="article-sidebox">
+            <h3>リンク状況</h3>
+            <p class="article-page__status">
+              未作成または曖昧なリンクは ${pageModel.unresolvedLinkCount} 件です。
+            </p>
+          </section>
+        </aside>
+      </div>
+    </article>
+  `;
+}
+
+export function renderMissingPage(pageModel) {
+  return `
+    <article class="article-page article-page--missing">
+      <nav class="breadcrumbs" aria-label="パンくず">
+        <a href="#overview">メインページ</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span>未作成記事</span>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span>${escapeHtml(pageModel.title)}</span>
+      </nav>
+
+      <header class="article-page__header">
+        <p class="article-page__eyebrow">未作成記事</p>
+        <h2>${escapeHtml(pageModel.title)}</h2>
+        <p class="article-page__summary">
+          この項目はまだ公開記事として作成されていません。参照元と近い既存ページを確認し、必要なら原稿化してください。
+        </p>
+      </header>
+
+      <div class="article-page__layout">
+        <div class="article-page__body">
+          <section class="article-section">
+            <h3>参照元ページ</h3>
+            ${renderEntrySummaryLinks(pageModel.sourceEntries)}
+          </section>
+
+          <section class="article-section">
+            <h3>投稿導線</h3>
+            <ul class="plain-list">
+              ${pageModel.participationGuides
+                .map((guide) => {
+                  return `<li><strong>${escapeHtml(guide.label)}:</strong> ${escapeHtml(guide.description)}</li>`;
+                })
+                .join("")}
+            </ul>
+            <p><a href="#participation">メインページの参加案内へ戻る</a></p>
+          </section>
+        </div>
+
+        <aside class="article-page__sidebar">
+          <section class="article-sidebox">
+            <h3>近い既存ページ</h3>
+            ${renderEntrySummaryLinks(pageModel.suggestions)}
+          </section>
+        </aside>
+      </div>
+    </article>
+  `;
+}
+
+export function renderDisambiguationPage(pageModel) {
+  return `
+    <article class="article-page article-page--disambiguation">
+      <nav class="breadcrumbs" aria-label="パンくず">
+        <a href="#overview">メインページ</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span>曖昧な名称</span>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span>${escapeHtml(pageModel.title)}</span>
+      </nav>
+
+      <header class="article-page__header">
+        <p class="article-page__eyebrow">曖昧な名称</p>
+        <h2>${escapeHtml(pageModel.title)}</h2>
+        <p class="article-page__summary">
+          この名称は複数の記事候補に対応しています。対象ページを選び直してください。
+        </p>
+      </header>
+
+      <div class="article-page__layout">
+        <div class="article-page__body">
+          <section class="article-section">
+            <h3>候補ページ</h3>
+            ${
+              pageModel.candidates.length === 0
+                ? '<p class="empty-note">候補ページを表示できません。</p>'
+                : `<ul class="entry-list entry-list--stacked">${pageModel.candidates
+                    .map((entry) => {
+                      return `
+                        <li>
+                          <p class="entry-list__headline">${renderEntryLink(entry)}</p>
+                          <p class="entry-list__meta">${escapeHtml(entry.category)} / 最終更新 ${escapeHtml(formatDisplayDate(entry.updated))}</p>
+                          <p>${escapeHtml(entry.summary)}</p>
+                        </li>
+                      `;
+                    })
+                    .join("")}</ul>`
+            }
+          </section>
+        </div>
+
+        <aside class="article-page__sidebar">
+          <section class="article-sidebox">
+            <h3>参照元ページ</h3>
+            ${renderEntrySummaryLinks(pageModel.sourceEntries)}
+          </section>
+        </aside>
+      </div>
+    </article>
+  `;
+}
+
+export function renderNotFoundPage(label) {
+  return `
+    <article class="article-page article-page--missing">
+      <nav class="breadcrumbs" aria-label="パンくず">
+        <a href="#overview">メインページ</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span>ページ未検出</span>
+      </nav>
+
+      <header class="article-page__header">
+        <p class="article-page__eyebrow">ページ未検出</p>
+        <h2>${escapeHtml(label)}</h2>
+        <p class="article-page__summary">
+          指定されたページは現在のサンプルデータに存在しません。メインページから辿り直してください。
+        </p>
+      </header>
+    </article>
+  `;
 }

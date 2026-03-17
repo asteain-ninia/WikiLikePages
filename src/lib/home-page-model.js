@@ -39,7 +39,13 @@ export function searchArticles(entries, query) {
       entry.category,
       entry.summary,
       entry.preview,
+      ...(entry.aliases ?? []),
+      ...(entry.tags ?? []),
       ...(entry.keywords ?? []),
+      ...((entry.sections ?? []).flatMap((section) => [
+        section.heading,
+        ...(section.paragraphs ?? []),
+      ])),
     ]
       .join(" ")
       .toLowerCase();

@@ -16,12 +16,20 @@ const fixtureArticles = [
   {
     id: "a",
     title: "白磁海",
+    aliases: ["白海"],
     category: "世界設定",
     created: "2026-03-10",
     updated: "2026-03-15",
     summary: "海域ページ",
     preview: "交易と海図の中心",
+    tags: ["地理"],
     keywords: ["交易"],
+    sections: [
+      {
+        heading: "概要",
+        paragraphs: ["灯台列島を扱う。"],
+      },
+    ],
   },
   {
     id: "b",
@@ -96,6 +104,21 @@ test("searchArticles searches title, summary, preview, category and keywords", (
   assert.deepEqual(
     matches.map((entry) => entry.id),
     ["a", "c"]
+  );
+});
+
+test("searchArticles also searches aliases, tags and section text", () => {
+  assert.deepEqual(
+    searchArticles(fixtureArticles, "白海").map((entry) => entry.id),
+    ["a"]
+  );
+  assert.deepEqual(
+    searchArticles(fixtureArticles, "地理").map((entry) => entry.id),
+    ["a"]
+  );
+  assert.deepEqual(
+    searchArticles(fixtureArticles, "灯台列島").map((entry) => entry.id),
+    ["a"]
   );
 });
 
