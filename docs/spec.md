@@ -1,4 +1,4 @@
-# WikiLikePages 仕様たたき台 v0.2
+# WikiLikePages 仕様 v0.3
 
 ## 1. 背景
 
@@ -37,36 +37,33 @@
 - GitHub Docsでは、GitHub PagesはGitHub Freeでは公開リポジトリで利用でき、非公開リポジトリでの利用はPro/Team/Enterprise系プランが前提とされている。
 - Pages単体では安全な認証付き編集UIを持ち込みにくいため、ブラウザ内編集を先に作るより、編集をObsidianなどに委譲したほうがMVPの難易度が低い。
 
-## 6. 構成案の比較
+## 6. アーキテクチャ
 
-| 案                               | 編集体験                               | 実装コスト | GitHub Pages適合 | 評価                           |
-| -------------------------------- | -------------------------------------- | ---------- | ---------------- | ------------------------------ |
-| GitHubのWeb編集だけで運用        | 低い。Wiki感が弱い                     | 最低       | 高い             | 最低限動くが、参加者体験が弱い |
-| Obsidian + Quartz + GitHub Pages | 高い。Wikiリンクや埋め込みに寄せやすい | 中         | 高い             | 推奨                           |
-| 独自CMSやGitベースCMSを載せる    | 中から高                               | 高         | 中               | 将来候補。MVPには重い          |
-
-## 7. 推奨アーキテクチャ
-
-### 7.1 結論
-
-MVPでは以下を採用する。
+### 6.1 採用構成
 
 - 編集: ローカルでObsidianまたは任意のテキストエディタを使う
 - ソース形式: MediaWiki風のWiki記法を基礎とし、標準MarkdownとObsidian記法を互換入力として扱う
 - 投稿経路: GitHub Pull Requestを標準とし、簡易投稿経路を別途用意する
-- 静的サイト生成: Quartz 4
-- 公開: GitHub Pages
+- 静的サイト生成: 自前の Node.js ビルドスクリプト (`scripts/`)
+- 公開: GitHub Pages (GitHub Actions 経由でデプロイ)
 
 投稿経路の詳細は [contribution-workflows.md](./contribution-workflows.md) を参照。
+実装の詳細は [implementation-architecture.md](./implementation-architecture.md) を参照。
 
-### 7.2 採用理由
+### 6.2 Quartz 4 を採用しなかった経緯
 
-- Quartz 4は公式にObsidian互換、全文検索、グラフ表示、wikilinks、transclusions、backlinksを機能として掲げている。
+初期検討では Quartz 4 を第一候補とした。Quartz 4 は Obsidian 互換、全文検索、グラフ表示、wikilinks、transclusions、backlinks を公式機能として掲げており、要件との親和性が高かった。
+
+しかし、既存の創作原稿に MediaWiki 風テンプレート (`{{基礎情報 国|...}}`) が多く含まれており、これを取り込むには Quartz のパーサを拡張するより、独自の正規化層を持つほうが制御しやすいと判断した。結果として、Node.js ベースの自前ビルドパイプラインを採用し、MediaWiki 風記法・Markdown・Obsidian 記法の混在を正規化層で吸収する構成にした。
+
+### 6.3 採用理由
+
 - Obsidianは公式に `[[Wikilinks]]` と通常Markdownリンクの両方をサポートし、ファイル名変更時に内部リンクを自動更新できる。
 - Obsidianのcallout記法は公式にサポートされており、スタイル付き注釈を比較的低コストで書ける。
 - 既存の創作原稿にはMediaWiki風の記法が含まれるため、そこを取り込み可能にしたほうが移行コストが低い。
 - GitHub Pagesは公式にカスタムワークフロー経由で任意の静的サイトジェネレータを配信できる。
 - GitHub Issue Formsはテキスト入力、ドロップダウン、チェックボックス、ファイルアップロードを持てるため、Gitを触らない投稿窓口として使いやすい。
+- 外部フレームワークに依存せず自前でビルドすることで、MediaWiki風テンプレートの変換やリンク解決を自由に制御できる。
 
 ## 8. コンテンツ仕様
 
@@ -217,14 +214,23 @@ summary: 1行要約
 
 ## 10. UI/UX要件
 
+### 10.1 必須
+
 - サイト内検索があること
 - バックリンク一覧があること
 - 未作成記事リンクを赤リンク相当で視認できること
 - 赤リンク遷移時に未作成記事用の案内ページを表示できること
 - タグまたはフォルダ単位で辿れること
 - モバイルでも読めること
-- できれば最終更新日と更新履歴への導線を持つこと
-- できればページプレビューとパンくずを持つこと
+- 記事本文の書式 (太字・斜体・リスト・外部リンク・コード) が正しく表示されること
+- テンプレート由来の構造データ (インフォボックス等) が閲覧用の定型表示に変換されること
+
+### 10.2 推奨
+
+- 最終更新日と更新履歴への導線を持つこと
+- ページプレビューとパンくずを持つこと
+- 記事内の見出しから自動生成された目次を表示すること
+- カテゴリ名からそのカテゴリの記事一覧へ遷移できること
 
 ## 11. リスク
 
@@ -237,6 +243,7 @@ summary: 1行要約
 
 ## 12. 将来拡張
 
+- 記事ごとの静的 HTML 生成 (SPA から SSG への移行)
 - ブラウザ内編集UIの追加
 - PRごとのプレビュー環境
 - テンプレート挿入や独自ショートコード
@@ -244,38 +251,35 @@ summary: 1行要約
 - 承認フローやLintの自動化
 - 外部フォームからPRを自動生成する連携
 
-## 13. 現時点の判断
+## 13. 基本思想
 
 - 最初に目指すべきは「Wikiサービスの完全代替」ではなく、「Wikiっぽく書けて静的に公開できる共同創作基盤」。
 - そのため、MVPは公開面の完成度よりも執筆体験の自然さを優先する。
 - 具体的には「Pages上で編集する」のではなく、「外部エディタで編集し、Pagesで読む」を基本思想にする。
 
-## 14. 次に詰めるべき未決事項
+## 14. 未決事項
+
+### 14.1 運用方針
 
 - 参加者は全員GitHubアカウントを持てるか
 - 公開リポジトリで問題ないか
 - 直接push可能なメンバーとPR必須メンバーを分けるか
 - 画像アップロード頻度はどれくらいか
 - ページ名に日本語を使う方針でURL体裁を許容できるか
-- どの MediaWiki風テンプレートをMVPで受けるか
 - 投稿経路の選択は [contribution-workflows.md](./contribution-workflows.md) の未決事項を参照
 
-## 15. 次のプロトタイプ実装案
+### 14.2 技術方針
 
-1. Quartz 4ベースで最小構成を立ち上げる
-2. GitHub Pagesデプロイ用のActionsを入れる
-3. 投稿経路の詳細設計を [contribution-workflows.md](./contribution-workflows.md) で確定する
-4. 本番公開とは分離したサンプル原稿を3カテゴリ分作る
-5. Obsidian運用ガイドを1枚書く
-6. 第2版仕様を切る
+- どの MediaWiki風テンプレートをMVPで受けるか (少なくとも `基礎情報 国` は確定)
+- 現在の SPA 構成をいつ記事ごとの静的 HTML 生成へ移行するか
+- Markdown 本文の HTML レンダリングに外部パーサ (marked, markdown-it 等) を導入するか、自前で書くか
+- 記事数が増えた場合の `content-data.js` 肥大化への対処 (分割ロード or 静的 HTML 化)
 
-## 参考
+## 15. 参考
 
-- Quartz 4: https://quartz.jzhao.xyz/
-- Quartz Hosting: https://quartz.jzhao.xyz/hosting
-- GitHub Pages custom workflows: https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages
-- GitHub Issue Forms: https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository
-- GitHub Discussions: https://docs.github.com/en/discussions
-- Obsidian internal links: https://help.obsidian.md/Linking%20notes%20and%20files/Internal%20links
-- Obsidian callouts: https://help.obsidian.md/callouts
-- Staticman: https://the.staticman.net/
+- [GitHub Pages custom workflows](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
+- [GitHub Issue Forms](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository)
+- [GitHub Discussions](https://docs.github.com/en/discussions)
+- [Obsidian internal links](https://help.obsidian.md/Linking+notes+and+files/Internal+links)
+- [Obsidian callouts](https://help.obsidian.md/callouts)
+- [Quartz 4](https://quartz.jzhao.xyz/) — 初期検討時の第一候補。6.2 節の経緯で不採用

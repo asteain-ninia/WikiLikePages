@@ -2,14 +2,15 @@
 
 ## 1. この文書の目的
 
-この文書は、WikiLikePagesにおける投稿経路とレビュー運用の詳細をまとめたものです。
+WikiLikePagesにおける投稿経路とレビュー運用の詳細をまとめる。
+参加者の技術的背景に応じた複数の入力経路を、1つの運用方針として整理する。
 
 - GitHubアカウントがある参加者
 - GitHubアカウントはあるがGitは使いたくない参加者
 - GitHubアカウントがない参加者
 - OneDriveやGoogle Driveの共有ドライブ経由で原稿を受けたい場合
 
-これらを1つの運用方針にまとめる。
+仕様の全体像は [spec.md](./spec.md) を、実装の詳細は [implementation-architecture.md](./implementation-architecture.md) を参照。
 
 ## 2. 基本原則
 
