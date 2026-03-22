@@ -225,6 +225,69 @@ test("buildDisambiguationPageModel returns candidate entries", () => {
   );
 });
 
+test("buildArticlePageModel resolves wikilinks in infobox templateModels", () => {
+  const entriesWithInfobox = [
+    {
+      id: "country",
+      title: "テスト国",
+      aliases: [],
+      category: "国家",
+      created: "2026-03-10",
+      updated: "2026-03-15",
+      summary: "テスト国の概要",
+      sections: [
+        { heading: "概要", paragraphs: ["テスト国は架空の国である。"] },
+      ],
+      templateModels: [
+        {
+          type: "notice",
+          style: "fictional",
+          text: "この記事は架空世界に関するものです。",
+        },
+        {
+          type: "infobox",
+          heading: "テスト国",
+          rows: [
+            { label: "首都", value: "[[テスト市]]" },
+            { label: "公用語", value: "テスト語" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "city",
+      title: "テスト市",
+      category: "世界設定",
+      created: "2026-03-11",
+      updated: "2026-03-14",
+      summary: "首都",
+      sections: [],
+    },
+  ];
+
+  const graph = buildWikiGraph(entriesWithInfobox);
+  const pageModel = buildArticlePageModel(graph, "country");
+
+  // notice should pass through unchanged
+  assert.equal(pageModel.templateModels[0].type, "notice");
+  assert.equal(pageModel.templateModels[0].style, "fictional");
+
+  // infobox rows should have resolved segments
+  const infobox = pageModel.templateModels[1];
+  assert.equal(infobox.type, "infobox");
+  assert.equal(infobox.rows[0].label, "首都");
+  assert.equal(infobox.rows[0].segments.length, 1);
+  assert.equal(infobox.rows[0].segments[0].type, "link");
+  assert.equal(infobox.rows[0].segments[0].status, "resolved");
+  assert.match(infobox.rows[0].segments[0].href, /city/);
+
+  // plain text row should have text segment only
+  assert.equal(infobox.rows[1].label, "公用語");
+  assert.equal(infobox.rows[1].segments.length, 1);
+  assert.equal(infobox.rows[1].segments[0].type, "text");
+  assert.equal(infobox.rows[1].segments[0].value, "テスト語");
+});
+
 test("parseAppRoute understands article, missing and home routes", () => {
   assert.deepEqual(parseAppRoute(buildArticleHref("sea", "概要")), {
     view: "article",

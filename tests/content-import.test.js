@@ -111,3 +111,80 @@ summary: 白磁海の要約です
     ["概要", "地理", "灯台列島"]
   );
 });
+
+test("buildArticleRecord produces templateModels when templateHandlers are provided", () => {
+  const templateHandlers = new Map([
+    [
+      "架空",
+      (template) => ({
+        type: "notice",
+        style: "fictional",
+        text: template.positional[0]
+          ? `この記事は架空世界「${template.positional[0]}」に関するものです。`
+          : "この記事は架空世界に関するものです。",
+      }),
+    ],
+    [
+      "基礎情報 国",
+      (template) => ({
+        type: "infobox",
+        heading: template.params["訳国名"] || "",
+        rows: [
+          { label: "首都", value: template.params["首都"] ?? "" },
+        ].filter((row) => row.value),
+      }),
+    ],
+  ]);
+
+  const article = buildArticleRecord({
+    relativePath: "samples/テスト国.md",
+    fileBasename: "テスト国",
+    created: "2026-03-10",
+    updated: "2026-03-15",
+    templateHandlers,
+    sourceText: `---
+title: テスト国
+---
+{{架空|テスト界}}
+{{基礎情報 国
+|訳国名=テスト国
+|首都=[[テスト市]]
+}}
+
+**テスト国**は架空の国である。
+`,
+  });
+
+  assert.equal(article.templateModels.length, 2);
+  assert.equal(article.templateModels[0].type, "notice");
+  assert.equal(article.templateModels[0].style, "fictional");
+  assert.match(article.templateModels[0].text, /テスト界/);
+  assert.equal(article.templateModels[1].type, "infobox");
+  assert.equal(article.templateModels[1].heading, "テスト国");
+  assert.equal(article.templateModels[1].rows[0].label, "首都");
+  assert.equal(article.templateModels[1].rows[0].value, "[[テスト市]]");
+});
+
+test("buildArticleRecord returns empty templateModels without handlers", () => {
+  const article = buildArticleRecord({
+    relativePath: "samples/テスト.md",
+    fileBasename: "テスト",
+    created: "2026-03-10",
+    updated: "2026-03-15",
+    sourceText: `{{架空|テスト界}}
+
+本文。
+`,
+  });
+
+  assert.deepEqual(article.templateModels, []);
+});
+
+test("parseMarkdownSections preserves inline formatting in section paragraphs", () => {
+  const sections = parseMarkdownSections(
+    "**太字**と*斜体*と`コード`を含む段落。\n\n## 節\n'''wiki太字'''と''wiki斜体''。"
+  );
+
+  assert.equal(sections[0].paragraphs[0], "**太字**と*斜体*と`コード`を含む段落。");
+  assert.equal(sections[1].paragraphs[0], "'''wiki太字'''と''wiki斜体''。");
+});
