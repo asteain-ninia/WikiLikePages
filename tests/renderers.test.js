@@ -242,6 +242,123 @@ test("renderTemplateModels returns empty string for empty or missing input", () 
   assert.equal(renderTemplateModels(undefined), "");
 });
 
+test("renderInlineMarkdown converts [text](url) to external link", () => {
+  const rendered = renderInlineMarkdown("[公式サイト](https://example.com)");
+  assert.match(rendered, /external-link/);
+  assert.match(rendered, /https:\/\/example\.com/);
+  assert.match(rendered, /公式サイト/);
+  assert.match(rendered, /rel="noopener noreferrer"/);
+});
+
+test("renderInlineMarkdown converts <url> to external link", () => {
+  const escaped = escapeHtml("<https://example.com>");
+  const rendered = renderInlineMarkdown(escaped);
+  assert.match(rendered, /external-link/);
+  assert.match(rendered, /https:\/\/example\.com/);
+});
+
+test("renderInlineMarkdown restores safe HTML tags (small, sup, sub)", () => {
+  const escaped = escapeHtml("<small>注記</small> と <sup>上付き</sup>");
+  const rendered = renderInlineMarkdown(escaped);
+  assert.match(rendered, /<small>注記<\/small>/);
+  assert.match(rendered, /<sup>上付き<\/sup>/);
+});
+
+test("renderArticlePage renders list items as ul/li", () => {
+  const rendered = renderArticlePage({
+    id: "entry-1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-10",
+    updated: "2026-03-15",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    sections: [
+      {
+        heading: "概要",
+        anchorId: "section-overview",
+        paragraphs: [
+          [{ type: "text", value: "・項目A" }],
+          [{ type: "text", value: "・項目B" }],
+          [{ type: "text", value: "通常段落" }],
+        ],
+      },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /<ul class="plain-list">/);
+  assert.match(rendered, /<li>項目A<\/li>/);
+  assert.match(rendered, /<li>項目B<\/li>/);
+  assert.match(rendered, /<p>通常段落<\/p>/);
+});
+
+test("renderArticlePage renders embed segments as img tags", () => {
+  const rendered = renderArticlePage({
+    id: "entry-1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-10",
+    updated: "2026-03-15",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    sections: [
+      {
+        heading: "概要",
+        anchorId: "section-overview",
+        paragraphs: [
+          [{ type: "embed", src: "map.png", alt: "地図" }],
+        ],
+      },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /embed-image/);
+  assert.match(rendered, /content\/map\.png/);
+  assert.match(rendered, /alt="地図"/);
+});
+
+test("renderArticlePage renders callout paragraphs", () => {
+  const rendered = renderArticlePage({
+    id: "entry-1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-10",
+    updated: "2026-03-15",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    sections: [
+      {
+        heading: "概要",
+        anchorId: "section-overview",
+        paragraphs: [
+          {
+            type: "callout",
+            calloutType: "warning",
+            title: "注意",
+            bodySegments: [{ type: "text", value: "これは警告です。" }],
+          },
+        ],
+      },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /callout--warning/);
+  assert.match(rendered, /注意/);
+  assert.match(rendered, /警告です/);
+});
+
 test("renderArticlePage includes notice and infobox from templateModels", () => {
   const rendered = renderArticlePage({
     id: "entry-1",

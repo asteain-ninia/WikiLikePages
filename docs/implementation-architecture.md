@@ -103,11 +103,11 @@ package.json
 - summary / preview / keywords / relatedTitles 自動抽出
 - draft / isSample フラグ判定
 - テンプレートハンドラ適用 (`templateHandlers` 引数を通じて `templateModels` を生成)
+- callout 記法パース (`> [!type] Title` → callout オブジェクト)
+- 安全なインライン HTML タグの保持 (`<small>`, `<sup>`, `<sub>` のみ)
 
 未実装の処理:
 
-- 画像・埋め込み (`![[画像.png]]`, `![[ページ名]]`) の解決
-- callout 記法 (`> [!note]`) の解釈
 - テーブル記法 (Markdown テーブル / MediaWiki テーブル)
 
 ### 3.4 Template Plugin System (`src/lib/template-registry.js`, `src/lib/templates/`)

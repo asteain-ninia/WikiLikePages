@@ -39,7 +39,17 @@ export function renderInlineMarkdown(escapedText) {
     .replace(/&#39;&#39;(.+?)&#39;&#39;/g, "<em>$1</em>")
     .replace(/\*([^*\n]+?)\*/g, "<em>$1</em>")
     .replace(/_([^_\n]+?)_/g, "<em>$1</em>")
-    .replace(/`([^`\n]+?)`/g, '<code class="inline-code">$1</code>');
+    .replace(/`([^`\n]+?)`/g, '<code class="inline-code">$1</code>')
+    .replace(
+      /\[([^\]]+?)\]\((https?:\/\/[^)]+)\)/g,
+      '<a href="$2" class="external-link" rel="noopener noreferrer">$1</a>'
+    )
+    .replace(
+      /&lt;(https?:\/\/[^\s&]+?)&gt;/g,
+      '<a href="$1" class="external-link" rel="noopener noreferrer">$1</a>'
+    )
+    .replace(/&lt;(small|sup|sub)&gt;/gi, "<$1>")
+    .replace(/&lt;\/(small|sup|sub)&gt;/gi, "</$1>");
 }
 
 function renderRelatedTitles(titles) {
@@ -53,6 +63,10 @@ function renderParagraphSegments(segments) {
         return renderInlineMarkdown(escapeHtml(segment.value));
       }
 
+      if (segment.type === "embed") {
+        return `<img class="embed-image" src="content/${escapeHtml(segment.src)}" alt="${escapeHtml(segment.alt)}" loading="lazy">`;
+      }
+
       const classNames = ["wiki-link"];
       if (segment.status === "missing") {
         classNames.push("wiki-link--missing");
@@ -63,6 +77,75 @@ function renderParagraphSegments(segments) {
       return `<a class="${classNames.join(" ")}" href="${escapeHtml(segment.href)}">${escapeHtml(segment.label)}</a>`;
     })
     .join("");
+}
+
+function isListItemSegments(segments) {
+  return segments.length > 0 && segments[0].type === "text" && segments[0].value.startsWith("・");
+}
+
+function stripListMarker(segments) {
+  const first = segments[0];
+  const stripped = { ...first, value: first.value.slice(1) };
+  return [stripped, ...segments.slice(1)];
+}
+
+function renderCallout(calloutParagraph) {
+  const styleMap = {
+    warning: "callout--warning",
+    caution: "callout--warning",
+    tip: "callout--tip",
+    hint: "callout--tip",
+    important: "callout--important",
+    danger: "callout--important",
+  };
+  const styleClass = styleMap[calloutParagraph.calloutType] ?? "";
+  const classAttr = styleClass ? ` ${styleClass}` : "";
+
+  return `
+    <aside class="callout${classAttr}" role="note">
+      <p class="callout__title">${escapeHtml(calloutParagraph.title)}</p>
+      <p>${renderParagraphSegments(calloutParagraph.bodySegments)}</p>
+    </aside>
+  `;
+}
+
+function renderSectionParagraphs(paragraphs) {
+  const parts = [];
+  let listBuffer = [];
+
+  function flushList() {
+    if (listBuffer.length === 0) {
+      return;
+    }
+
+    parts.push(
+      `<ul class="plain-list">${listBuffer
+        .map((segments) => `<li>${renderParagraphSegments(stripListMarker(segments))}</li>`)
+        .join("")}</ul>`
+    );
+    listBuffer = [];
+  }
+
+  for (const segments of paragraphs) {
+    if (segments && typeof segments === "object" && !Array.isArray(segments) && segments.type === "callout") {
+      flushList();
+      parts.push(renderCallout(segments));
+      continue;
+    }
+
+    if (Array.isArray(segments) && isListItemSegments(segments)) {
+      listBuffer.push(segments);
+      continue;
+    }
+
+    flushList();
+    if (Array.isArray(segments)) {
+      parts.push(`<p>${renderParagraphSegments(segments)}</p>`);
+    }
+  }
+
+  flushList();
+  return parts.join("");
 }
 
 function renderEntrySummaryLinks(entries) {
@@ -257,9 +340,7 @@ export function renderArticlePage(pageModel) {
               return `
                 <section class="article-section" id="${escapeHtml(section.anchorId)}">
                   <h3>${escapeHtml(section.heading)}</h3>
-                  ${section.paragraphs
-                    .map((segments) => `<p>${renderParagraphSegments(segments)}</p>`)
-                    .join("")}
+                  ${renderSectionParagraphs(section.paragraphs)}
                 </section>
               `;
             })

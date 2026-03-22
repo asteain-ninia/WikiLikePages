@@ -81,6 +81,7 @@ test("extractWikiLinks parses simple, display-text and heading links", () => {
       raw: "[[白磁海]]",
       start: 0,
       end: 7,
+      isEmbed: false,
       pageTitle: "白磁海",
       heading: "",
       displayText: "",
@@ -89,6 +90,7 @@ test("extractWikiLinks parses simple, display-text and heading links", () => {
       raw: "[[潮見港|港]]",
       start: 8,
       end: 17,
+      isEmbed: false,
       pageTitle: "潮見港",
       heading: "",
       displayText: "港",
@@ -97,11 +99,33 @@ test("extractWikiLinks parses simple, display-text and heading links", () => {
       raw: "[[白磁海#航路]]",
       start: 18,
       end: 28,
+      isEmbed: false,
       pageTitle: "白磁海",
       heading: "航路",
       displayText: "",
     },
   ]);
+});
+
+test("extractWikiLinks distinguishes embed links from regular links", () => {
+  const links = extractWikiLinks("![[map.png]] と [[白磁海]]");
+  assert.equal(links.length, 2);
+  assert.equal(links[0].isEmbed, true);
+  assert.equal(links[0].pageTitle, "map.png");
+  assert.equal(links[0].raw, "![[map.png]]");
+  assert.equal(links[1].isEmbed, false);
+  assert.equal(links[1].pageTitle, "白磁海");
+});
+
+test("buildWikiTextSegments produces embed segments for ![[...]]", () => {
+  const graph = buildWikiGraph(fixtureEntries);
+  const segments = buildWikiTextSegments("画像: ![[map.png]] 以上", graph);
+
+  assert.equal(segments.length, 3);
+  assert.equal(segments[0].type, "text");
+  assert.equal(segments[1].type, "embed");
+  assert.equal(segments[1].src, "map.png");
+  assert.equal(segments[2].type, "text");
 });
 
 test("buildReferenceIndex resolves titles and aliases", () => {

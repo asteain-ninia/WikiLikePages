@@ -181,15 +181,17 @@ export function parseAppRoute(hash) {
 
 export function extractWikiLinks(text) {
   const matches = [];
-  const pattern = /\[\[([^[\]]+?)\]\]/g;
+  const pattern = /(!?)\[\[([^[\]]+?)\]\]/g;
   let match = pattern.exec(text);
 
   while (match) {
+    const isEmbed = match[1] === "!";
     matches.push({
       raw: match[0],
       start: match.index,
       end: match.index + match[0].length,
-      ...parseLinkToken(match[1]),
+      isEmbed,
+      ...parseLinkToken(match[2]),
     });
 
     match = pattern.exec(text);
@@ -292,6 +294,10 @@ export function buildWikiGraph(entries) {
       const sourceTexts = [section.sourceHeading, ...(section.paragraphs ?? [])].filter(Boolean);
       for (const paragraph of sourceTexts) {
         for (const link of extractWikiLinks(paragraph)) {
+          if (link.isEmbed) {
+            continue;
+          }
+
           const resolution = resolveArticleReference(referenceIndex, entryById, link.pageTitle);
 
           if (resolution.type === "article") {
@@ -371,6 +377,16 @@ export function buildWikiTextSegments(text, graph) {
       });
     }
 
+    if (link.isEmbed) {
+      segments.push({
+        type: "embed",
+        src: link.pageTitle,
+        alt: link.displayText || link.pageTitle,
+      });
+      cursor = link.end;
+      continue;
+    }
+
     const resolution = resolveArticleReference(graph.referenceIndex, graph.entryById, link.pageTitle);
 
     if (resolution.type === "article") {
@@ -422,6 +438,19 @@ export function buildArticlePageModel(graph, entryId) {
   let unresolvedLinkCount = 0;
   const sections = (entry.sections ?? []).map((section) => {
     const paragraphs = (section.paragraphs ?? []).map((paragraph) => {
+      if (typeof paragraph === "object" && paragraph.type === "callout") {
+        const bodySegments = buildWikiTextSegments(paragraph.body, graph);
+        unresolvedLinkCount += bodySegments.filter(
+          (segment) => segment.type === "link" && segment.status !== "resolved"
+        ).length;
+        return {
+          type: "callout",
+          calloutType: paragraph.calloutType,
+          title: paragraph.title,
+          bodySegments,
+        };
+      }
+
       const segments = buildWikiTextSegments(paragraph, graph);
       unresolvedLinkCount += segments.filter(
         (segment) => segment.type === "link" && segment.status !== "resolved"

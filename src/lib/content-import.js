@@ -42,6 +42,12 @@ function stripInlineHtml(text) {
     .replace(/<\/?[^>]+>/g, "");
 }
 
+function sanitizeInlineHtml(text) {
+  return text
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<(?!\/?(?:small|sup|sub)\b)[^>]+>/gi, "");
+}
+
 function stripInlineFormatting(text) {
   return text
     .replace(/'''([^']+?)'''/g, "$1")
@@ -304,16 +310,55 @@ function normalizeHeadingText(rawHeading) {
 }
 
 function normalizeSectionText(rawParagraph) {
-  return collapseSpaces(stripInlineHtml(stripInlineTemplates(rawParagraph)));
+  return collapseSpaces(sanitizeInlineHtml(stripInlineTemplates(rawParagraph)));
 }
 
 function normalizeParagraphText(rawParagraph) {
   return normalizeInlineText(stripInlineTemplates(rawParagraph));
 }
 
+function parseCalloutLines(lines, startIndex) {
+  const firstLine = lines[startIndex].trim();
+  const calloutMatch = /^>\s*\[!(\w+)\]\s*(.*)$/.exec(firstLine);
+  if (!calloutMatch) {
+    return null;
+  }
+
+  const calloutType = calloutMatch[1].toLowerCase();
+  const title = calloutMatch[2].trim();
+  const bodyLines = [];
+  let endIndex = startIndex + 1;
+
+  while (endIndex < lines.length) {
+    const line = lines[endIndex].trim();
+    if (line.startsWith("> ")) {
+      bodyLines.push(line.slice(2));
+      endIndex += 1;
+      continue;
+    }
+
+    if (line === ">") {
+      bodyLines.push("");
+      endIndex += 1;
+      continue;
+    }
+
+    break;
+  }
+
+  return {
+    type: "callout",
+    calloutType,
+    title: title || calloutType,
+    body: bodyLines.join("\n").trim(),
+    endIndex,
+  };
+}
+
 function buildParagraphs(lines) {
   const paragraphs = [];
   let currentParagraph = "";
+  let lineIndex = 0;
 
   function flushParagraph() {
     if (!currentParagraph) {
@@ -324,12 +369,27 @@ function buildParagraphs(lines) {
     currentParagraph = "";
   }
 
-  for (const rawLine of lines) {
+  while (lineIndex < lines.length) {
+    const rawLine = lines[lineIndex];
     const line = rawLine.trimEnd();
     const trimmed = line.trim();
 
     if (!trimmed) {
       flushParagraph();
+      lineIndex += 1;
+      continue;
+    }
+
+    const callout = parseCalloutLines(lines, lineIndex);
+    if (callout) {
+      flushParagraph();
+      paragraphs.push({
+        type: "callout",
+        calloutType: callout.calloutType,
+        title: callout.title,
+        body: callout.body,
+      });
+      lineIndex = callout.endIndex;
       continue;
     }
 
@@ -341,6 +401,7 @@ function buildParagraphs(lines) {
         level: headingMatch[1].length,
         text: headingMatch[2].trim(),
       });
+      lineIndex += 1;
       continue;
     }
 
@@ -354,10 +415,12 @@ function buildParagraphs(lines) {
       if (normalizedItem) {
         paragraphs.push(`・${normalizedItem}`);
       }
+      lineIndex += 1;
       continue;
     }
 
     currentParagraph = mergeParagraphLine(currentParagraph, line.trim());
+    lineIndex += 1;
   }
 
   flushParagraph();
@@ -392,6 +455,11 @@ export function parseMarkdownSections(sourceText) {
       if (paragraph) {
         currentSection.paragraphs.push(paragraph);
       }
+      continue;
+    }
+
+    if (token.type === "callout") {
+      currentSection.paragraphs.push(token);
       continue;
     }
 

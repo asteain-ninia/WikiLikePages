@@ -180,6 +180,32 @@ test("buildArticleRecord returns empty templateModels without handlers", () => {
   assert.deepEqual(article.templateModels, []);
 });
 
+test("parseMarkdownSections extracts callout blocks", () => {
+  const sections = parseMarkdownSections(`本文。
+
+> [!note] 注意事項
+> これは注意です。
+> 二行目。
+
+続きの段落。`);
+
+  assert.equal(sections[0].paragraphs[0], "本文。");
+  assert.equal(sections[0].paragraphs[1].type, "callout");
+  assert.equal(sections[0].paragraphs[1].calloutType, "note");
+  assert.equal(sections[0].paragraphs[1].title, "注意事項");
+  assert.match(sections[0].paragraphs[1].body, /注意です/);
+  assert.equal(sections[0].paragraphs[2], "続きの段落。");
+});
+
+test("parseMarkdownSections preserves safe inline HTML in section paragraphs", () => {
+  const sections = parseMarkdownSections(
+    "<small>詳しくは参照</small>。<script>alert(1)</script>"
+  );
+
+  assert.match(sections[0].paragraphs[0], /<small>詳しくは参照<\/small>/);
+  assert.doesNotMatch(sections[0].paragraphs[0], /<script>/);
+});
+
 test("parseMarkdownSections preserves inline formatting in section paragraphs", () => {
   const sections = parseMarkdownSections(
     "**太字**と*斜体*と`コード`を含む段落。\n\n## 節\n'''wiki太字'''と''wiki斜体''。"
