@@ -303,6 +303,10 @@ function normalizeHeadingText(rawHeading) {
   return normalizeInlineText(replaceWikiMarkupWithPlainText(rawHeading));
 }
 
+function normalizeSectionText(rawParagraph) {
+  return collapseSpaces(stripInlineHtml(stripInlineTemplates(rawParagraph)));
+}
+
 function normalizeParagraphText(rawParagraph) {
   return normalizeInlineText(stripInlineTemplates(rawParagraph));
 }
@@ -346,7 +350,7 @@ function buildParagraphs(lines) {
     if (bulletMatch || orderedMatch) {
       flushParagraph();
       const itemText = bulletMatch ? bulletMatch[2] : orderedMatch?.[2] ?? "";
-      const normalizedItem = normalizeParagraphText(itemText);
+      const normalizedItem = normalizeSectionText(itemText);
       if (normalizedItem) {
         paragraphs.push(`・${normalizedItem}`);
       }
@@ -384,7 +388,7 @@ export function parseMarkdownSections(sourceText) {
 
   for (const token of tokens) {
     if (typeof token === "string") {
-      const paragraph = normalizeParagraphText(token);
+      const paragraph = normalizeSectionText(token);
       if (paragraph) {
         currentSection.paragraphs.push(paragraph);
       }
@@ -490,12 +494,26 @@ function extractWikiLinkTargets(text) {
   return matches;
 }
 
+function buildTemplateModels(templates, templateHandlers) {
+  if (!templateHandlers || templateHandlers.size === 0) {
+    return [];
+  }
+
+  return templates
+    .map((template) => {
+      const handler = templateHandlers.get(template.name);
+      return handler ? handler(template) : null;
+    })
+    .filter(Boolean);
+}
+
 export function buildArticleRecord({
   relativePath,
   fileBasename,
   sourceText,
   created,
   updated,
+  templateHandlers,
 }) {
   const { data: frontmatter, body: sourceWithoutFrontmatter } = parseFrontmatter(sourceText);
   const { templates, body: bodyWithoutLeadingTemplates } =
@@ -547,6 +565,7 @@ export function buildArticleRecord({
     relatedTitles,
     sourcePath: relativePath.replace(/\\/g, "/"),
     templates: templates.map((template) => template.name),
+    templateModels: buildTemplateModels(templates, templateHandlers),
     sections,
     draft: frontmatter.draft === true,
     isSample: relativePath.replace(/\\/g, "/").startsWith("samples/"),

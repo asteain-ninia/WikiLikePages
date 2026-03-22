@@ -30,6 +30,18 @@ function renderEntryLink(entry, options = {}) {
   return `<a${className} href="${escapeHtml(href)}">${escapeHtml(label)}</a>`;
 }
 
+export function renderInlineMarkdown(escapedText) {
+  return escapedText
+    .replace(/\*\*\*(.+?)\*\*\*/g, "<strong><em>$1</em></strong>")
+    .replace(/&#39;&#39;&#39;(.+?)&#39;&#39;&#39;/g, "<strong>$1</strong>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/__(.+?)__/g, "<strong>$1</strong>")
+    .replace(/&#39;&#39;(.+?)&#39;&#39;/g, "<em>$1</em>")
+    .replace(/\*([^*\n]+?)\*/g, "<em>$1</em>")
+    .replace(/_([^_\n]+?)_/g, "<em>$1</em>")
+    .replace(/`([^`\n]+?)`/g, '<code class="inline-code">$1</code>');
+}
+
 function renderRelatedTitles(titles) {
   return titles.map((title) => `<li>${escapeHtml(title)}</li>`).join("");
 }
@@ -38,7 +50,7 @@ function renderParagraphSegments(segments) {
   return segments
     .map((segment) => {
       if (segment.type === "text") {
-        return escapeHtml(segment.value);
+        return renderInlineMarkdown(escapeHtml(segment.value));
       }
 
       const classNames = ["wiki-link"];
@@ -236,6 +248,8 @@ export function renderArticlePage(pageModel) {
         </p>
       </header>
 
+      ${renderNotices(pageModel.templateModels)}
+
       <div class="article-page__layout">
         <div class="article-page__body">
           ${pageModel.sections
@@ -253,6 +267,8 @@ export function renderArticlePage(pageModel) {
         </div>
 
         <aside class="article-page__sidebar">
+          ${renderInfoboxes(pageModel.templateModels)}
+
           <section class="article-sidebox">
             <h3>タグ</h3>
             ${renderTagList(pageModel.tags)}
@@ -406,4 +422,102 @@ export function renderNotFoundPage(label) {
       </header>
     </article>
   `;
+}
+
+function renderInfoboxRowSegments(segments) {
+  return segments
+    .map((segment) => {
+      if (segment.type === "text") {
+        return renderInlineMarkdown(escapeHtml(segment.value));
+      }
+
+      const classNames = ["wiki-link"];
+      if (segment.status === "missing") {
+        classNames.push("wiki-link--missing");
+      } else if (segment.status === "ambiguous") {
+        classNames.push("wiki-link--ambiguous");
+      }
+
+      return `<a class="${classNames.join(" ")}" href="${escapeHtml(segment.href)}">${escapeHtml(segment.label)}</a>`;
+    })
+    .join("");
+}
+
+export function renderInfobox(model) {
+  const headingHtml = model.heading
+    ? `<caption class="infobox__heading">${escapeHtml(model.heading)}</caption>`
+    : "";
+
+  const rowsHtml = model.rows
+    .map((row) => {
+      const valueHtml = row.segments
+        ? renderInfoboxRowSegments(row.segments)
+        : escapeHtml(row.value);
+
+      return `
+        <tr>
+          <th class="infobox__label">${escapeHtml(row.label)}</th>
+          <td class="infobox__value">${valueHtml}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  return `
+    <table class="infobox" role="presentation">
+      ${headingHtml}
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  `;
+}
+
+export function renderNotice(model) {
+  const styleClass = model.style ? ` notice--${escapeHtml(model.style)}` : "";
+  return `
+    <aside class="notice${styleClass}" role="note">
+      <p>${escapeHtml(model.text)}</p>
+    </aside>
+  `;
+}
+
+function renderNotices(templateModels) {
+  if (!templateModels) {
+    return "";
+  }
+
+  return templateModels
+    .filter((model) => model.type === "notice")
+    .map((model) => renderNotice(model))
+    .join("");
+}
+
+function renderInfoboxes(templateModels) {
+  if (!templateModels) {
+    return "";
+  }
+
+  return templateModels
+    .filter((model) => model.type === "infobox")
+    .map((model) => renderInfobox(model))
+    .join("");
+}
+
+export function renderTemplateModels(templateModels) {
+  if (!templateModels || templateModels.length === 0) {
+    return "";
+  }
+
+  return templateModels
+    .map((model) => {
+      if (model.type === "infobox") {
+        return renderInfobox(model);
+      }
+
+      if (model.type === "notice") {
+        return renderNotice(model);
+      }
+
+      return "";
+    })
+    .join("");
 }

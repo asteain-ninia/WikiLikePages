@@ -436,11 +436,27 @@ export function buildArticlePageModel(graph, entryId) {
     };
   });
 
+  const templateModels = (entry.templateModels ?? []).map((model) => {
+    if (model.type === "infobox") {
+      return {
+        ...model,
+        rows: model.rows.map((row) => ({
+          label: row.label,
+          value: row.value,
+          segments: buildWikiTextSegments(row.value, graph),
+        })),
+      };
+    }
+
+    return model;
+  });
+
   return {
     ...entry,
     aliases: entry.aliases ?? [],
     tags: entry.tags ?? [],
     sections,
+    templateModels,
     backlinks: graph.backlinksById[entry.id] ?? [],
     unresolvedLinkCount,
   };

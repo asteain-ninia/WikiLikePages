@@ -4,11 +4,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { buildArticleRecord } from "../src/lib/content-import.js";
+import { loadTemplateHandlers } from "../src/lib/template-registry.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
 const contentRoot = path.join(projectRoot, "content");
+const templatesDir = path.join(projectRoot, "src", "lib", "templates");
 const generatedDataDir = path.join(projectRoot, "src", "data", "generated");
 const generatedDataPath = path.join(generatedDataDir, "content-data.js");
 
@@ -102,6 +104,7 @@ function sortEntries(entries) {
 
 async function buildContentData() {
   const markdownFiles = await collectMarkdownFiles(contentRoot);
+  const templateHandlers = await loadTemplateHandlers(templatesDir);
   const entries = [];
 
   for (const absolutePath of markdownFiles) {
@@ -118,6 +121,7 @@ async function buildContentData() {
         sourceText,
         created: dates.created,
         updated: dates.updated,
+        templateHandlers,
       })
     );
   }
