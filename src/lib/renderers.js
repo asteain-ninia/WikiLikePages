@@ -507,6 +507,27 @@ export function renderProcessSteps(steps) {
   return steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("");
 }
 
+function renderHistory(history) {
+  if (!history || history.length === 0) {
+    return '<p class="empty-note">履歴情報はありません。</p>';
+  }
+
+  return `
+    <ul class="history-list">
+      ${history
+        .map(
+          (entry) =>
+            `<li>
+              <span class="history-date">${escapeHtml(formatDisplayDate(entry.date))}</span>
+              <span class="history-message">${escapeHtml(entry.message)}</span>
+              <span class="history-author">${escapeHtml(entry.author)}</span>
+            </li>`
+        )
+        .join("")}
+    </ul>
+  `;
+}
+
 export function renderArticlePage(pageModel) {
   return `
     <article class="article-page">
@@ -563,6 +584,11 @@ export function renderArticlePage(pageModel) {
                     .map((alias) => `<li>${escapeHtml(alias)}</li>`)
                     .join("")}</ul>`
             }
+          </section>
+
+          <section class="article-sidebox">
+            <h3>更新履歴</h3>
+            ${renderHistory(pageModel.history)}
           </section>
 
           <section class="article-sidebox">

@@ -792,3 +792,55 @@ test("renderCategoryPage shows empty message when no articles match", () => {
   const rendered = renderCategoryPage("未知", []);
   assert.match(rendered, /該当する記事はまだありません/);
 });
+
+test("renderArticlePage renders page history in sidebar", () => {
+  const rendered = renderArticlePage({
+    id: "t1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    footnotes: [],
+    history: [
+      { date: "2026-03-23", author: "太郎", message: "内容を更新" },
+      { date: "2026-03-20", author: "花子", message: "初版作成" },
+    ],
+    sections: [
+      { heading: "概要", anchorId: "section-概要", paragraphs: [[{ type: "text", value: "本文" }]] },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /更新履歴/);
+  assert.match(rendered, /history-list/);
+  assert.match(rendered, /内容を更新/);
+  assert.match(rendered, /初版作成/);
+  assert.match(rendered, /太郎/);
+});
+
+test("renderArticlePage shows empty history message when no history", () => {
+  const rendered = renderArticlePage({
+    id: "t1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    footnotes: [],
+    sections: [
+      { heading: "概要", anchorId: "section-概要", paragraphs: [[{ type: "text", value: "本文" }]] },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /履歴情報はありません/);
+});

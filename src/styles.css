@@ -518,6 +518,44 @@ html[data-file-protocol="true"] .protocol-warning {
   margin-top: 18px;
 }
 
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.history-list li {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--color-border-soft);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.history-list li:last-child {
+  border-bottom: none;
+}
+
+.history-date {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.history-message {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-author {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
 .article-section + .article-section {
   padding-top: 18px;
   border-top: 1px solid #eaecf0;

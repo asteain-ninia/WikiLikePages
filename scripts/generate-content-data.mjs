@@ -80,6 +80,30 @@ function getGitDates(repoRelativePath) {
   return null;
 }
 
+function getGitHistory(repoRelativePath) {
+  try {
+    const output = execFileSync(
+      "git",
+      ["log", "--follow", "--format=%cs\t%an\t%s", "--", repoRelativePath],
+      {
+        cwd: projectRoot,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }
+    );
+    return output
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [date, author, ...messageParts] = line.split("\t");
+        return { date, author, message: messageParts.join("\t") };
+      });
+  } catch {
+    return [];
+  }
+}
+
 async function getFileDates(absolutePath, repoRelativePath) {
   const gitDates = getGitDates(repoRelativePath);
   if (gitDates) {
@@ -115,17 +139,18 @@ async function buildContentData() {
     const fileBasename = path.basename(absolutePath, path.extname(absolutePath));
     const sourceText = await readFile(absolutePath, "utf8");
     const dates = await getFileDates(absolutePath, repoRelativePath);
+    const history = getGitHistory(repoRelativePath);
 
-    entries.push(
-      buildArticleRecord({
-        relativePath: relativeToContent,
-        fileBasename,
-        sourceText,
-        created: dates.created,
-        updated: dates.updated,
-        templateHandlers,
-      })
-    );
+    const record = buildArticleRecord({
+      relativePath: relativeToContent,
+      fileBasename,
+      sourceText,
+      created: dates.created,
+      updated: dates.updated,
+      templateHandlers,
+    });
+    record.history = history;
+    entries.push(record);
   }
 
   const nonDraftEntries = entries.filter((entry) => !entry.draft);
