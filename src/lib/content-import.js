@@ -218,7 +218,9 @@ function parseTemplateLineContent(content) {
 export function extractLeadingTemplates(sourceText) {
   const source = normalizeNewlines(sourceText);
   const templates = [];
+  const templateRanges = [];
   let cursor = 0;
+  let skippedParagraph = false;
 
   while (cursor < source.length) {
     while (cursor < source.length && /\s/.test(source[cursor])) {
@@ -226,11 +228,24 @@ export function extractLeadingTemplates(sourceText) {
     }
 
     if (source.slice(cursor, cursor + 2) !== "{{") {
-      break;
+      if (skippedParagraph) {
+        break;
+      }
+
+      // Skip past the first paragraph (non-template text before a blank line)
+      // to find templates that appear after the intro paragraph
+      const nextBlank = source.indexOf("\n\n", cursor);
+      if (nextBlank === -1) {
+        break;
+      }
+      cursor = nextBlank + 2;
+      skippedParagraph = true;
+      continue;
     }
 
     let depth = 0;
     let index = cursor;
+    const templateStart = cursor;
 
     while (index < source.length) {
       const pair = source.slice(index, index + 2);
@@ -244,8 +259,9 @@ export function extractLeadingTemplates(sourceText) {
         depth -= 1;
         index += 2;
         if (depth === 0) {
-          const templateSource = source.slice(cursor + 2, index - 2);
+          const templateSource = source.slice(templateStart + 2, index - 2);
           templates.push(parseTemplateLineContent(templateSource.trim()));
+          templateRanges.push({ start: templateStart, end: index });
           cursor = index;
           break;
         }
@@ -261,9 +277,17 @@ export function extractLeadingTemplates(sourceText) {
     }
   }
 
+  // Build body by removing extracted template ranges
+  let body = source;
+  for (let i = templateRanges.length - 1; i >= 0; i -= 1) {
+    const range = templateRanges[i];
+    body = body.slice(0, range.start) + body.slice(range.end);
+  }
+  body = body.replace(/^\s+/, "").replace(/\n{3,}/g, "\n\n");
+
   return {
     templates,
-    body: source.slice(cursor).replace(/^\s+/, ""),
+    body,
   };
 }
 
@@ -740,6 +764,42 @@ function truncateText(text, maxLength) {
   return `${text.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
+function collectParagraphTexts(paragraph) {
+  if (typeof paragraph === "string") {
+    return [paragraph];
+  }
+
+  if (!paragraph || typeof paragraph !== "object") {
+    return [];
+  }
+
+  const texts = [];
+
+  if (paragraph.type === "table") {
+    for (const row of paragraph.rows ?? []) {
+      for (const cell of row) {
+        if (cell.text) {
+          texts.push(cell.text);
+        }
+      }
+    }
+  }
+
+  if (paragraph.type === "blockquote" && paragraph.body) {
+    texts.push(paragraph.body);
+  }
+
+  if (paragraph.type === "callout" && paragraph.body) {
+    texts.push(paragraph.body);
+  }
+
+  if (paragraph.type === "main-article" && paragraph.articleName) {
+    texts.push(`[[${paragraph.articleName}]]`);
+  }
+
+  return texts;
+}
+
 function buildSummaryParagraphs(sections) {
   const collected = [];
 
@@ -855,7 +915,10 @@ export function buildArticleRecord({
     inferCategory(frontmatter, templates, title),
   ]);
   const allSourceText = sections
-    .flatMap((section) => [section.sourceHeading, ...section.paragraphs])
+    .flatMap((section) => [
+      section.sourceHeading,
+      ...section.paragraphs.flatMap(collectParagraphTexts),
+    ])
     .filter(Boolean)
     .join("\n");
   const relatedTitles = buildUniqueList(extractWikiLinkTargets(allSourceText), 6);

@@ -108,7 +108,9 @@ function renderWikiTable(tableModel) {
             attrs.push(`colspan="${cell.colspan}"`);
           }
           const attrStr = attrs.length > 0 ? ` ${attrs.join(" ")}` : "";
-          const content = renderInlineMarkdown(escapeHtml(cell.text));
+          const content = cell.segments
+            ? renderParagraphSegments(cell.segments)
+            : renderInlineMarkdown(escapeHtml(cell.text));
           return `<${tag}${attrStr}>${content}</${tag}>`;
         })
         .join("");
@@ -120,7 +122,10 @@ function renderWikiTable(tableModel) {
 }
 
 function renderBlockquote(blockquoteModel) {
-  return `<blockquote class="wiki-blockquote">${renderInlineMarkdown(escapeHtml(blockquoteModel.body))}</blockquote>`;
+  const content = blockquoteModel.bodySegments
+    ? renderParagraphSegments(blockquoteModel.bodySegments)
+    : renderInlineMarkdown(escapeHtml(blockquoteModel.body));
+  return `<blockquote class="wiki-blockquote">${content}</blockquote>`;
 }
 
 export function renderFootnotes(footnotes) {

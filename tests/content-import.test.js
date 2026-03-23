@@ -369,3 +369,46 @@ test("parseMarkdownSections handles {{main|...}} as main-article link", () => {
   assert.equal(historySec.paragraphs[0].articleName, "テストの歴史");
   assert.match(historySec.paragraphs[1], /歴史は長い/);
 });
+
+test("extractLeadingTemplates finds templates after intro paragraph", () => {
+  const source = `'''テスト国'''は架空の国である。
+
+{{基礎情報 国
+|首都=[[テスト市]]
+}}
+
+本文です。`;
+
+  const parsed = extractLeadingTemplates(source);
+
+  assert.equal(parsed.templates.length, 1);
+  assert.equal(parsed.templates[0].name, "基礎情報 国");
+  assert.equal(parsed.templates[0].params["首都"], "[[テスト市]]");
+  assert.match(parsed.body, /テスト国/);
+  assert.match(parsed.body, /本文です/);
+  assert.ok(!parsed.body.includes("基礎情報 国"));
+});
+
+test("buildArticleRecord extracts relatedTitles from table cells", () => {
+  const article = buildArticleRecord({
+    relativePath: "test.wiki",
+    fileBasename: "テスト",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    sourceText: `本文。\n\n{| class="wikitable"\n! 名前\n|-\n| [[テーブルリンク先]]\n|}`,
+  });
+
+  assert.ok(article.relatedTitles.includes("テーブルリンク先"));
+});
+
+test("buildArticleRecord extracts relatedTitles from blockquote body", () => {
+  const article = buildArticleRecord({
+    relativePath: "test.wiki",
+    fileBasename: "テスト",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    sourceText: `本文。\n\n<blockquote>[[引用リンク先]]の言葉。</blockquote>`,
+  });
+
+  assert.ok(article.relatedTitles.includes("引用リンク先"));
+});

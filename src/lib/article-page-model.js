@@ -1,3 +1,39 @@
+function collectTextsFromParagraph(paragraph) {
+  if (typeof paragraph === "string") {
+    return [paragraph];
+  }
+
+  if (!paragraph || typeof paragraph !== "object") {
+    return [];
+  }
+
+  const texts = [];
+
+  if (paragraph.type === "table") {
+    for (const row of paragraph.rows ?? []) {
+      for (const cell of row) {
+        if (cell.text) {
+          texts.push(cell.text);
+        }
+      }
+    }
+  }
+
+  if (paragraph.type === "blockquote" && paragraph.body) {
+    texts.push(paragraph.body);
+  }
+
+  if (paragraph.type === "callout" && paragraph.body) {
+    texts.push(paragraph.body);
+  }
+
+  if (paragraph.type === "main-article" && paragraph.articleName) {
+    texts.push(`[[${paragraph.articleName}]]`);
+  }
+
+  return texts;
+}
+
 function normalizeLookupValue(value) {
   return String(value).trim().toLocaleLowerCase("ja-JP");
 }
@@ -291,7 +327,9 @@ export function buildWikiGraph(entries) {
 
   for (const entry of entries) {
     for (const section of entry.sections ?? []) {
-      const sourceTexts = [section.sourceHeading, ...(section.paragraphs ?? [])].filter(Boolean);
+      const sourceTexts = [section.sourceHeading, ...(section.paragraphs ?? [])].flatMap(
+        (paragraph) => collectTextsFromParagraph(paragraph)
+      ).filter(Boolean);
       for (const paragraph of sourceTexts) {
         for (const link of extractWikiLinks(paragraph)) {
           if (link.isEmbed) {
@@ -451,8 +489,19 @@ export function buildArticlePageModel(graph, entryId) {
         };
       }
 
-      if (typeof paragraph === "object" && (paragraph.type === "table" || paragraph.type === "blockquote")) {
-        return paragraph;
+      if (typeof paragraph === "object" && paragraph.type === "table") {
+        const resolvedRows = paragraph.rows.map((row) =>
+          row.map((cell) => ({
+            ...cell,
+            segments: buildWikiTextSegments(cell.text, graph),
+          }))
+        );
+        return { ...paragraph, rows: resolvedRows };
+      }
+
+      if (typeof paragraph === "object" && paragraph.type === "blockquote") {
+        const bodySegments = buildWikiTextSegments(paragraph.body, graph);
+        return { ...paragraph, bodySegments };
       }
 
       if (typeof paragraph === "object" && paragraph.type === "main-article") {

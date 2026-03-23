@@ -324,3 +324,140 @@ test("parseAppRoute understands article, missing and home routes", () => {
   });
   assert.deepEqual(parseAppRoute("#overview"), { view: "home" });
 });
+
+test("buildWikiGraph registers backlinks from table cell wikilinks", () => {
+  const entries = [
+    {
+      id: "source",
+      title: "ソース",
+      updated: "2026-01-01",
+      sections: [
+        {
+          sourceHeading: "",
+          heading: "概要",
+          paragraphs: [
+            {
+              type: "table",
+              caption: "",
+              rows: [
+                [{ isHeader: true, text: "名前" }],
+                [{ isHeader: false, text: "[[白磁海]]の港" }],
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    ...fixtureEntries,
+  ];
+
+  const graph = buildWikiGraph(entries);
+  const backlinks = graph.backlinksById["sea"] ?? [];
+  assert.ok(
+    backlinks.some((entry) => entry.id === "source"),
+    "table cell wikilink should register a backlink"
+  );
+});
+
+test("buildWikiGraph registers backlinks from blockquote wikilinks", () => {
+  const entries = [
+    {
+      id: "source",
+      title: "ソース",
+      updated: "2026-01-01",
+      sections: [
+        {
+          sourceHeading: "",
+          heading: "概要",
+          paragraphs: [
+            {
+              type: "blockquote",
+              body: "[[白磁海]]は美しい。",
+            },
+          ],
+        },
+      ],
+    },
+    ...fixtureEntries,
+  ];
+
+  const graph = buildWikiGraph(entries);
+  const backlinks = graph.backlinksById["sea"] ?? [];
+  assert.ok(
+    backlinks.some((entry) => entry.id === "source"),
+    "blockquote wikilink should register a backlink"
+  );
+});
+
+test("buildArticlePageModel resolves wikilinks in table cells", () => {
+  const entries = [
+    {
+      id: "withTable",
+      title: "テーブル記事",
+      category: "記事",
+      created: "2026-01-01",
+      updated: "2026-01-01",
+      summary: "",
+      sections: [
+        {
+          sourceHeading: "",
+          heading: "概要",
+          paragraphs: [
+            {
+              type: "table",
+              caption: "",
+              rows: [
+                [{ isHeader: false, text: "[[白磁海]]へ" }],
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    ...fixtureEntries,
+  ];
+
+  const graph = buildWikiGraph(entries);
+  const model = buildArticlePageModel(graph, "withTable");
+  const table = model.sections[0].paragraphs[0];
+  assert.equal(table.type, "table");
+  assert.ok(table.rows[0][0].segments, "table cell should have segments");
+  const linkSegment = table.rows[0][0].segments.find((s) => s.type === "link");
+  assert.ok(linkSegment, "table cell should contain a resolved link segment");
+  assert.equal(linkSegment.status, "resolved");
+});
+
+test("buildArticlePageModel resolves wikilinks in blockquote body", () => {
+  const entries = [
+    {
+      id: "withQuote",
+      title: "引用記事",
+      category: "記事",
+      created: "2026-01-01",
+      updated: "2026-01-01",
+      summary: "",
+      sections: [
+        {
+          sourceHeading: "",
+          heading: "概要",
+          paragraphs: [
+            {
+              type: "blockquote",
+              body: "[[白磁海]]は素晴らしい。",
+            },
+          ],
+        },
+      ],
+    },
+    ...fixtureEntries,
+  ];
+
+  const graph = buildWikiGraph(entries);
+  const model = buildArticlePageModel(graph, "withQuote");
+  const bq = model.sections[0].paragraphs[0];
+  assert.equal(bq.type, "blockquote");
+  assert.ok(bq.bodySegments, "blockquote should have bodySegments");
+  const linkSegment = bq.bodySegments.find((s) => s.type === "link");
+  assert.ok(linkSegment, "blockquote should contain a resolved link segment");
+  assert.equal(linkSegment.status, "resolved");
+});
