@@ -18,6 +18,7 @@ import {
 import {
   renderArticlePage,
   renderCategoryCards,
+  renderCategoryPage,
   renderDisambiguationPage,
   renderFeaturedArticle,
   renderMissingPage,
@@ -152,6 +153,13 @@ function updatePageHeader(route) {
     return;
   }
 
+  if (route.view === "category") {
+    elements.pageHeading.textContent = route.category;
+    elements.pageLead.textContent = `「${route.category}」カテゴリの記事一覧です。`;
+    document.title = `${route.category} - カテゴリ - WikiLikePages`;
+    return;
+  }
+
   elements.pageHeading.textContent = "メインページ";
   elements.pageLead.textContent = "架空世界の知識を集め、つなげる共同創作の百科事典です。";
   document.title = "WikiLikePages";
@@ -211,6 +219,12 @@ function renderDetailView(route) {
     elements.detailView.innerHTML = pageModel
       ? renderDisambiguationPage(pageModel)
       : renderNotFoundPage(route.title);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+
+  if (route.view === "category") {
+    elements.detailView.innerHTML = renderCategoryPage(route.category, articles);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 }

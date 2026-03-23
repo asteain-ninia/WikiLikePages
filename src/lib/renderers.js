@@ -301,6 +301,27 @@ function renderEntrySummaryLinks(entries) {
   `;
 }
 
+function renderTableOfContents(sections) {
+  const headings = sections.filter((section) => section.heading !== "概要");
+  if (headings.length < 2) {
+    return "";
+  }
+
+  const items = headings
+    .map(
+      (section) =>
+        `<li><a href="#${escapeHtml(section.anchorId)}">${escapeHtml(section.heading)}</a></li>`
+    )
+    .join("");
+
+  return `
+    <nav class="toc" aria-labelledby="toc-heading">
+      <h3 id="toc-heading">目次</h3>
+      <ol class="toc__list">${items}</ol>
+    </nav>
+  `;
+}
+
 function renderTagList(tags) {
   if (tags.length === 0) {
     return '<p class="empty-note">タグはまだ設定されていません。</p>';
@@ -308,7 +329,12 @@ function renderTagList(tags) {
 
   return `
     <ul class="tag-list" aria-label="タグ一覧">
-      ${tags.map((tag) => `<li class="tag">${escapeHtml(tag)}</li>`).join("")}
+      ${tags
+        .map(
+          (tag) =>
+            `<li><a class="tag" href="#!category/${encodeURIComponent(tag)}">${escapeHtml(tag)}</a></li>`
+        )
+        .join("")}
     </ul>
   `;
 }
@@ -415,14 +441,56 @@ export function renderCategoryCards(categoryCards) {
   return categoryCards
     .map(
       (category) => `
-        <article class="category-card">
+        <a class="category-card" href="#!category/${encodeURIComponent(category.name)}">
           <h3>${escapeHtml(category.name)}</h3>
           <p class="category-card__count">記事数 ${category.articleCount}</p>
           <p>${escapeHtml(category.description)}</p>
-        </article>
+        </a>
       `
     )
     .join("");
+}
+
+export function renderCategoryPage(categoryName, articles) {
+  const filtered = articles
+    .filter((entry) => entry.category === categoryName || (entry.tags ?? []).includes(categoryName))
+    .sort((a, b) => a.title.localeCompare(b.title, "ja-JP"));
+
+  const articleListHtml =
+    filtered.length === 0
+      ? '<p class="empty-note">このカテゴリに該当する記事はまだありません。</p>'
+      : `<ul class="category-article-list">${filtered
+          .map(
+            (entry) => `
+              <li>
+                <a class="wiki-link" href="${buildArticleHref(entry.id)}">${escapeHtml(entry.title)}</a>
+                <span class="entry-meta"> — ${escapeHtml(entry.summary || "")}</span>
+              </li>
+            `
+          )
+          .join("")}</ul>`;
+
+  return `
+    <article class="article-page">
+      <nav class="breadcrumbs" aria-label="パンくず">
+        <a href="#overview">メインページ</a>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span>カテゴリ</span>
+        <span class="breadcrumbs__separator" aria-hidden="true">/</span>
+        <span>${escapeHtml(categoryName)}</span>
+      </nav>
+
+      <header class="article-page__header">
+        <p class="article-page__eyebrow">カテゴリ</p>
+        <h2>${escapeHtml(categoryName)}</h2>
+        <p class="article-page__summary">「${escapeHtml(categoryName)}」カテゴリの記事一覧です。（${filtered.length} 件）</p>
+      </header>
+
+      <div class="article-page__body" style="padding: 18px 20px;">
+        ${articleListHtml}
+      </div>
+    </article>
+  `;
 }
 
 export function renderParticipationGuides(guides) {
@@ -460,6 +528,8 @@ export function renderArticlePage(pageModel) {
       </header>
 
       ${renderNotices(pageModel.templateModels)}
+
+      ${renderTableOfContents(pageModel.sections)}
 
       <div class="article-page__layout">
         <div class="article-page__body">

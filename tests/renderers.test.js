@@ -5,6 +5,7 @@ import {
   escapeHtml,
   renderArticlePage,
   renderCategoryCards,
+  renderCategoryPage,
   renderDisambiguationPage,
   renderFeaturedArticle,
   renderFootnotes,
@@ -712,4 +713,82 @@ test("renderArticlePage renders code-block paragraphs", () => {
 
   assert.match(rendered, /code-block/);
   assert.match(rendered, /const x = 1/);
+});
+
+test("renderArticlePage includes table of contents when 2+ non-overview sections", () => {
+  const rendered = renderArticlePage({
+    id: "t1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    footnotes: [],
+    sections: [
+      { heading: "概要", anchorId: "section-概要", paragraphs: [[{ type: "text", value: "本文" }]] },
+      { heading: "歴史", anchorId: "section-歴史", paragraphs: [[{ type: "text", value: "歴史" }]] },
+      { heading: "地理", anchorId: "section-地理", paragraphs: [[{ type: "text", value: "地理" }]] },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /class="toc"/);
+  assert.match(rendered, /目次/);
+  assert.match(rendered, /歴史/);
+  assert.match(rendered, /地理/);
+});
+
+test("renderArticlePage omits table of contents when only 1 non-overview section", () => {
+  const rendered = renderArticlePage({
+    id: "t1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    footnotes: [],
+    sections: [
+      { heading: "概要", anchorId: "section-概要", paragraphs: [[{ type: "text", value: "本文" }]] },
+      { heading: "歴史", anchorId: "section-歴史", paragraphs: [[{ type: "text", value: "歴史" }]] },
+    ],
+    templateModels: [],
+  });
+
+  assert.ok(!rendered.includes('class="toc"'));
+});
+
+test("renderCategoryCards generates links to category pages", () => {
+  const rendered = renderCategoryCards([
+    { name: "国家", description: "説明", articleCount: 3 },
+  ]);
+
+  assert.match(rendered, /href="#!category\//);
+  assert.match(rendered, /国家/);
+});
+
+test("renderCategoryPage lists articles matching category or tag", () => {
+  const articles = [
+    { id: "a", title: "記事A", category: "国家", tags: [], summary: "概要A" },
+    { id: "b", title: "記事B", category: "人物", tags: ["国家"], summary: "概要B" },
+    { id: "c", title: "記事C", category: "組織", tags: [], summary: "概要C" },
+  ];
+
+  const rendered = renderCategoryPage("国家", articles);
+  assert.match(rendered, /記事A/);
+  assert.match(rendered, /記事B/);
+  assert.ok(!rendered.includes("記事C"));
+  assert.match(rendered, /2 件/);
+});
+
+test("renderCategoryPage shows empty message when no articles match", () => {
+  const rendered = renderCategoryPage("未知", []);
+  assert.match(rendered, /該当する記事はまだありません/);
 });

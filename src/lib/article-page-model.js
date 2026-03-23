@@ -225,6 +225,13 @@ export function parseAppRoute(hash) {
     };
   }
 
+  if (view === "category" && parts[1]) {
+    return {
+      view: "category",
+      category: decodeURIComponent(parts.slice(1).join("/")),
+    };
+  }
+
   return { view: "home" };
 }
 

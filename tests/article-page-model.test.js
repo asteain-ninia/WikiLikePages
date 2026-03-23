@@ -323,6 +323,10 @@ test("parseAppRoute understands article, missing and home routes", () => {
     title: "白磁海",
   });
   assert.deepEqual(parseAppRoute("#overview"), { view: "home" });
+  assert.deepEqual(parseAppRoute("#!category/%E5%9B%BD%E5%AE%B6"), {
+    view: "category",
+    category: "国家",
+  });
 });
 
 test("buildWikiGraph registers backlinks from table cell wikilinks", () => {
