@@ -43,9 +43,7 @@ function stripInlineHtml(text) {
 }
 
 function sanitizeInlineHtml(text) {
-  return text
-    .replace(/<br\s*\/?>/gi, " ")
-    .replace(/<(?!\/?(?:small|sup|sub)\b)[^>]+>/gi, "");
+  return text.replace(/<(?!\/?(?:small|sup|sub|br)\b)[^>]+>/gi, "");
 }
 
 function stripInlineFormatting(text) {
@@ -275,7 +273,8 @@ function inferTitle(frontmatter, introParagraphs, fileBasename) {
   }
 
   const leadingParagraph = introParagraphs[0] ?? "";
-  const boldTitleMatch = /^\*\*(.+?)\*\*/.exec(leadingParagraph);
+  const boldTitleMatch = /^\*\*(.+?)\*\*/.exec(leadingParagraph)
+    ?? /^'''(.+?)'''/.exec(leadingParagraph);
   if (boldTitleMatch) {
     return normalizeInlineText(replaceWikiMarkupWithPlainText(boldTitleMatch[1]));
   }
@@ -355,6 +354,191 @@ function parseCalloutLines(lines, startIndex) {
   };
 }
 
+function parseMediaWikiTable(lines, startIndex) {
+  if (!/^\{\|/.test(lines[startIndex].trim())) {
+    return null;
+  }
+
+  const rows = [];
+  let caption = "";
+  let currentRow = null;
+  let currentCell = null;
+  let endIndex = startIndex + 1;
+
+  function flushCell() {
+    if (currentCell) {
+      currentCell.text = currentCell.text.trim();
+      if (!currentRow) {
+        currentRow = [];
+      }
+      currentRow.push(currentCell);
+      currentCell = null;
+    }
+  }
+
+  function flushRow() {
+    flushCell();
+    if (currentRow && currentRow.length > 0) {
+      rows.push(currentRow);
+    }
+    currentRow = null;
+  }
+
+  while (endIndex < lines.length) {
+    const line = lines[endIndex].trim();
+
+    if (line === "|}") {
+      flushRow();
+      endIndex += 1;
+      break;
+    }
+
+    if (line.startsWith("|+")) {
+      caption = line.slice(2).trim();
+      endIndex += 1;
+      continue;
+    }
+
+    if (line === "|-" || line.startsWith("|- ")) {
+      flushRow();
+      currentRow = [];
+      endIndex += 1;
+      continue;
+    }
+
+    if (line.startsWith("!")) {
+      flushCell();
+      if (!currentRow) {
+        currentRow = [];
+      }
+      const headerContent = line.slice(1);
+      const headerCells = headerContent.split("!!");
+      for (const cellContent of headerCells) {
+        const { attrs, text } = parseCellAttrsAndText(cellContent);
+        flushCell();
+        currentCell = { isHeader: true, text: text.trim(), ...attrs };
+      }
+      endIndex += 1;
+      continue;
+    }
+
+    if (line.startsWith("|")) {
+      flushCell();
+      if (!currentRow) {
+        currentRow = [];
+      }
+      const cellContent = line.slice(1);
+      const dataCells = cellContent.split("||");
+      for (const part of dataCells) {
+        const { attrs, text } = parseCellAttrsAndText(part);
+        flushCell();
+        currentCell = { isHeader: false, text: text.trim(), ...attrs };
+      }
+      endIndex += 1;
+      continue;
+    }
+
+    if (currentCell) {
+      currentCell.text += "\n" + line;
+    }
+    endIndex += 1;
+  }
+
+  flushRow();
+  return { type: "table", caption, rows, endIndex };
+}
+
+function parseCellAttrsAndText(raw) {
+  const pipeIndex = raw.indexOf("|");
+  if (pipeIndex === -1 || /\[\[/.test(raw.slice(0, pipeIndex))) {
+    return { attrs: {}, text: raw };
+  }
+
+  const attrPart = raw.slice(0, pipeIndex).trim();
+  const text = raw.slice(pipeIndex + 1);
+
+  if (!/=/.test(attrPart)) {
+    return { attrs: {}, text: raw };
+  }
+
+  const attrs = {};
+  const rowspanMatch = /rowspan\s*=\s*"?(\d+)"?/i.exec(attrPart);
+  if (rowspanMatch) {
+    attrs.rowspan = Number(rowspanMatch[1]);
+  }
+
+  const colspanMatch = /colspan\s*=\s*"?(\d+)"?/i.exec(attrPart);
+  if (colspanMatch) {
+    attrs.colspan = Number(colspanMatch[1]);
+  }
+
+  return { attrs, text };
+}
+
+function parseBlockquoteLines(lines, startIndex) {
+  const firstLine = lines[startIndex].trim();
+  if (!firstLine.startsWith("<blockquote>")) {
+    return null;
+  }
+
+  let content = "";
+  let endIndex = startIndex;
+
+  for (let i = startIndex; i < lines.length; i += 1) {
+    content += (i > startIndex ? "\n" : "") + lines[i];
+    endIndex = i + 1;
+    if (lines[i].includes("</blockquote>")) {
+      break;
+    }
+  }
+
+  const bodyMatch = /<blockquote>([\s\S]*?)<\/blockquote>/i.exec(content);
+  if (!bodyMatch) {
+    return null;
+  }
+
+  const remaining = content.slice(content.indexOf("</blockquote>") + "</blockquote>".length).trim();
+  return {
+    type: "blockquote",
+    body: bodyMatch[1].trim(),
+    trailing: remaining,
+    endIndex,
+  };
+}
+
+function processFootnotes(text) {
+  const footnotes = [];
+  const processed = text.replace(/<ref(?:\s[^>]*)?>[\s\S]*?<\/ref>/gi, (match) => {
+    const bodyMatch = /<ref(?:\s[^>]*)?>(.+?)<\/ref>/is.exec(match);
+    if (!bodyMatch) {
+      return "";
+    }
+    footnotes.push(bodyMatch[1].trim());
+    return `[${footnotes.length}]`;
+  });
+  const cleaned = processed.replace(/<references\s*\/>/gi, "");
+  return { text: cleaned, footnotes };
+}
+
+function convertMediaWikiImageToEmbed(text) {
+  return text.replace(
+    /\[\[(?:ファイル|File|Image):([^\]|]+?)(?:\|[^\]]*?)?\]\]/gi,
+    (_match, fileName) => `![[${fileName.trim()}]]`
+  );
+}
+
+function extractCategoryTags(text) {
+  const tags = [];
+  const cleaned = text.replace(
+    /\[\[Category:([^\]|]+?)(?:\|[^\]]*)?\]\]/gi,
+    (_match, categoryName) => {
+      tags.push(categoryName.trim());
+      return "";
+    }
+  );
+  return { text: cleaned, categoryTags: tags };
+}
+
 function buildParagraphs(lines) {
   const paragraphs = [];
   let currentParagraph = "";
@@ -380,6 +564,41 @@ function buildParagraphs(lines) {
       continue;
     }
 
+    if (/^\{\|/.test(trimmed)) {
+      flushParagraph();
+      const table = parseMediaWikiTable(lines, lineIndex);
+      if (table) {
+        paragraphs.push({
+          type: "table",
+          caption: table.caption,
+          rows: table.rows,
+        });
+        lineIndex = table.endIndex;
+        continue;
+      }
+    }
+
+    if (trimmed.startsWith("<blockquote>")) {
+      flushParagraph();
+      const blockquote = parseBlockquoteLines(lines, lineIndex);
+      if (blockquote) {
+        paragraphs.push({
+          type: "blockquote",
+          body: blockquote.body,
+        });
+        if (blockquote.trailing) {
+          currentParagraph = blockquote.trailing;
+        }
+        lineIndex = blockquote.endIndex;
+        continue;
+      }
+    }
+
+    if (/^<references\s*\/>$/i.test(trimmed)) {
+      lineIndex += 1;
+      continue;
+    }
+
     const callout = parseCalloutLines(lines, lineIndex);
     if (callout) {
       flushParagraph();
@@ -394,12 +613,16 @@ function buildParagraphs(lines) {
     }
 
     const headingMatch = /^(#{2,6})\s+(.+)$/.exec(trimmed);
-    if (headingMatch) {
+    const mwHeadingMatch = !headingMatch
+      ? /^(={2,6})\s*(.+?)\s*=+\s*$/.exec(trimmed)
+      : null;
+    if (headingMatch || mwHeadingMatch) {
       flushParagraph();
+      const match = headingMatch ?? mwHeadingMatch;
       paragraphs.push({
         type: "heading",
-        level: headingMatch[1].length,
-        text: headingMatch[2].trim(),
+        level: match[1].length,
+        text: match[2].trim(),
       });
       lineIndex += 1;
       continue;
@@ -407,13 +630,30 @@ function buildParagraphs(lines) {
 
     const bulletMatch =
       /^([*\-+])(?:\s+|(?=<))(.+)$/.exec(trimmed) ?? /^(・)\s*(.+)$/.exec(trimmed);
-    const orderedMatch = /^(\d+)[.)]\s+(.+)$/.exec(trimmed);
+    const orderedMatch = /^(\d+)[.)]\s+(.+)$/.exec(trimmed)
+      ?? /^(#)\s+(.+)$/.exec(trimmed);
     if (bulletMatch || orderedMatch) {
       flushParagraph();
       const itemText = bulletMatch ? bulletMatch[2] : orderedMatch?.[2] ?? "";
       const normalizedItem = normalizeSectionText(itemText);
       if (normalizedItem) {
         paragraphs.push(`・${normalizedItem}`);
+      }
+      lineIndex += 1;
+      continue;
+    }
+
+    const mainMatch = /^\x00MAIN:(.+?)\x00(.*)$/.exec(trimmed);
+    if (mainMatch) {
+      flushParagraph();
+      const articleName = mainMatch[1].trim();
+      paragraphs.push({
+        type: "main-article",
+        articleName,
+      });
+      const trailing = mainMatch[2].trim();
+      if (trailing) {
+        currentParagraph = trailing;
       }
       lineIndex += 1;
       continue;
@@ -458,7 +698,7 @@ export function parseMarkdownSections(sourceText) {
       continue;
     }
 
-    if (token.type === "callout") {
+    if (token.type === "callout" || token.type === "table" || token.type === "blockquote" || token.type === "main-article") {
       currentSection.paragraphs.push(token);
       continue;
     }
@@ -505,6 +745,10 @@ function buildSummaryParagraphs(sections) {
 
   for (const section of sections) {
     for (const paragraph of section.paragraphs) {
+      if (typeof paragraph !== "string") {
+        continue;
+      }
+
       if (paragraph.startsWith("・")) {
         continue;
       }
@@ -586,7 +830,15 @@ export function buildArticleRecord({
   const { data: frontmatter, body: sourceWithoutFrontmatter } = parseFrontmatter(sourceText);
   const { templates, body: bodyWithoutLeadingTemplates } =
     extractLeadingTemplates(sourceWithoutFrontmatter);
-  const cleanedBody = stripInlineTemplates(bodyWithoutLeadingTemplates).trim();
+  const { text: bodyWithoutCategories, categoryTags } =
+    extractCategoryTags(bodyWithoutLeadingTemplates);
+  const bodyWithImages = convertMediaWikiImageToEmbed(bodyWithoutCategories);
+  const { text: bodyWithFootnoteRefs, footnotes } = processFootnotes(bodyWithImages);
+  const bodyWithMainConverted = bodyWithFootnoteRefs.replace(
+    /\{\{main\|([^}]+)\}\}/gi,
+    (_match, articleName) => `\x00MAIN:${articleName.trim()}\x00`
+  );
+  const cleanedBody = stripInlineTemplates(bodyWithMainConverted).trim();
   const sections = parseMarkdownSections(cleanedBody);
   const leadParagraphs = buildSummaryParagraphs(sections);
   const title = inferTitle(frontmatter, leadParagraphs, fileBasename);
@@ -599,6 +851,7 @@ export function buildArticleRecord({
   );
   const tags = buildUniqueList([
     ...(Array.isArray(frontmatter.tags) ? frontmatter.tags : []),
+    ...categoryTags,
     inferCategory(frontmatter, templates, title),
   ]);
   const allSourceText = sections
@@ -620,7 +873,7 @@ export function buildArticleRecord({
   );
 
   return {
-    id: relativePath.replace(/\\/g, "/").replace(/\.md$/i, ""),
+    id: relativePath.replace(/\\/g, "/").replace(/\.(md|wiki|txt)$/i, ""),
     title,
     aliases,
     category: inferCategory(frontmatter, templates, title),
@@ -634,6 +887,7 @@ export function buildArticleRecord({
     sourcePath: relativePath.replace(/\\/g, "/"),
     templates: templates.map((template) => template.name),
     templateModels: buildTemplateModels(templates, templateHandlers),
+    footnotes,
     sections,
     draft: frontmatter.draft === true,
     isSample: relativePath.replace(/\\/g, "/").startsWith("samples/"),

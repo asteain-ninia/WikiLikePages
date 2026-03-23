@@ -7,6 +7,7 @@ import {
   renderCategoryCards,
   renderDisambiguationPage,
   renderFeaturedArticle,
+  renderFootnotes,
   renderInfobox,
   renderInlineMarkdown,
   renderMissingPage,
@@ -386,4 +387,160 @@ test("renderArticlePage includes notice and infobox from templateModels", () => 
   assert.match(rendered, /架空世界です。/);
   assert.match(rendered, /infobox__heading/);
   assert.match(rendered, /テスト国/);
+});
+
+test("renderInlineMarkdown preserves <br> tags", () => {
+  const result = renderInlineMarkdown("行1&lt;br&gt;行2&lt;br/&gt;行3");
+  assert.match(result, /<br>/);
+  assert.doesNotMatch(result, /&lt;br/);
+});
+
+test("renderArticlePage renders wikitable from table paragraphs", () => {
+  const rendered = renderArticlePage({
+    id: "t1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    sections: [
+      {
+        heading: "概要",
+        anchorId: "section-概要",
+        paragraphs: [
+          {
+            type: "table",
+            caption: "テストキャプション",
+            rows: [
+              [
+                { isHeader: true, text: "名前" },
+                { isHeader: true, text: "値" },
+              ],
+              [
+                { isHeader: false, text: "A" },
+                { isHeader: false, text: "1" },
+              ],
+            ],
+          },
+        ],
+      },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /wikitable/);
+  assert.match(rendered, /テストキャプション/);
+  assert.match(rendered, /<th>名前<\/th>/);
+  assert.match(rendered, /<td>A<\/td>/);
+});
+
+test("renderArticlePage renders blockquote paragraphs", () => {
+  const rendered = renderArticlePage({
+    id: "t1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    sections: [
+      {
+        heading: "概要",
+        anchorId: "section-概要",
+        paragraphs: [
+          { type: "blockquote", body: "引用テキスト" },
+        ],
+      },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /wiki-blockquote/);
+  assert.match(rendered, /引用テキスト/);
+});
+
+test("renderArticlePage renders main-article link paragraphs", () => {
+  const rendered = renderArticlePage({
+    id: "t1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    sections: [
+      {
+        heading: "歴史",
+        anchorId: "section-歴史",
+        paragraphs: [
+          {
+            type: "main-article",
+            articleName: "テストの歴史",
+            segments: [
+              { type: "link", status: "missing", href: "#!missing/テストの歴史", label: "テストの歴史", title: "テストの歴史" },
+            ],
+          },
+        ],
+      },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /main-article-link/);
+  assert.match(rendered, /詳細は/);
+  assert.match(rendered, /テストの歴史/);
+});
+
+test("renderFootnotes renders numbered footnote list", () => {
+  const result = renderFootnotes(["注釈1です", "注釈2です"]);
+
+  assert.match(result, /footnotes/);
+  assert.match(result, /fn-1/);
+  assert.match(result, /fn-2/);
+  assert.match(result, /注釈1です/);
+  assert.match(result, /注釈2です/);
+  assert.match(result, /\[1\]/);
+  assert.match(result, /\[2\]/);
+});
+
+test("renderFootnotes returns empty for no footnotes", () => {
+  assert.equal(renderFootnotes([]), "");
+  assert.equal(renderFootnotes(null), "");
+});
+
+test("renderArticlePage renders footnotes section", () => {
+  const rendered = renderArticlePage({
+    id: "t1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    footnotes: ["脚注のテスト"],
+    sections: [
+      {
+        heading: "概要",
+        anchorId: "section-概要",
+        paragraphs: [[{ type: "text", value: "本文[1]" }]],
+      },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /脚注のテスト/);
+  assert.match(rendered, /footnotes/);
 });

@@ -451,6 +451,15 @@ export function buildArticlePageModel(graph, entryId) {
         };
       }
 
+      if (typeof paragraph === "object" && (paragraph.type === "table" || paragraph.type === "blockquote")) {
+        return paragraph;
+      }
+
+      if (typeof paragraph === "object" && paragraph.type === "main-article") {
+        const segments = buildWikiTextSegments(`[[${paragraph.articleName}]]`, graph);
+        return { ...paragraph, segments };
+      }
+
       const segments = buildWikiTextSegments(paragraph, graph);
       unresolvedLinkCount += segments.filter(
         (segment) => segment.type === "link" && segment.status !== "resolved"
@@ -484,6 +493,7 @@ export function buildArticlePageModel(graph, entryId) {
     ...entry,
     aliases: entry.aliases ?? [],
     tags: entry.tags ?? [],
+    footnotes: entry.footnotes ?? [],
     sections,
     templateModels,
     backlinks: graph.backlinksById[entry.id] ?? [],

@@ -629,6 +629,85 @@ html[data-file-protocol="true"] .protocol-warning {
   margin-bottom: 0;
 }
 
+.wikitable {
+  border-collapse: collapse;
+  margin: 12px 0;
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.wikitable caption {
+  caption-side: top;
+  font-weight: 700;
+  text-align: left;
+  padding: 6px 8px;
+}
+
+.wikitable th,
+.wikitable td {
+  border: 1px solid var(--color-border-soft);
+  padding: 6px 8px;
+  vertical-align: top;
+}
+
+.wikitable th {
+  background: var(--color-surface-soft);
+  font-weight: 600;
+  text-align: left;
+}
+
+.wiki-blockquote {
+  margin: 12px 0;
+  padding: 8px 16px;
+  border-left: 3px solid var(--color-border);
+  background: var(--color-surface-soft);
+  font-style: italic;
+}
+
+.wiki-blockquote p {
+  margin: 4px 0;
+}
+
+.footnotes {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-soft);
+  font-size: 0.85rem;
+}
+
+.footnotes h3 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.footnotes__list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.footnotes__list li {
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.footnote__number {
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.notice--main-article {
+  background: var(--color-surface-soft);
+  border-left-color: var(--color-link);
+}
+
+.main-article-link {
+  font-style: italic;
+  color: var(--color-text-muted);
+  margin: 4px 0 8px;
+}
+
 @media (max-width: 960px) {
   .site-header__inner,
   .welcome-box,

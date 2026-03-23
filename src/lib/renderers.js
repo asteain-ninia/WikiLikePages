@@ -49,7 +49,8 @@ export function renderInlineMarkdown(escapedText) {
       '<a href="$1" class="external-link" rel="noopener noreferrer">$1</a>'
     )
     .replace(/&lt;(small|sup|sub)&gt;/gi, "<$1>")
-    .replace(/&lt;\/(small|sup|sub)&gt;/gi, "</$1>");
+    .replace(/&lt;\/(small|sup|sub)&gt;/gi, "</$1>")
+    .replace(/&lt;br\s*\/?&gt;/gi, "<br>");
 }
 
 function renderRelatedTitles(titles) {
@@ -87,6 +88,58 @@ function stripListMarker(segments) {
   const first = segments[0];
   const stripped = { ...first, value: first.value.slice(1) };
   return [stripped, ...segments.slice(1)];
+}
+
+function renderWikiTable(tableModel) {
+  const captionHtml = tableModel.caption
+    ? `<caption>${renderInlineMarkdown(escapeHtml(tableModel.caption))}</caption>`
+    : "";
+
+  const rowsHtml = tableModel.rows
+    .map((row) => {
+      const cellsHtml = row
+        .map((cell) => {
+          const tag = cell.isHeader ? "th" : "td";
+          const attrs = [];
+          if (cell.rowspan && cell.rowspan > 1) {
+            attrs.push(`rowspan="${cell.rowspan}"`);
+          }
+          if (cell.colspan && cell.colspan > 1) {
+            attrs.push(`colspan="${cell.colspan}"`);
+          }
+          const attrStr = attrs.length > 0 ? ` ${attrs.join(" ")}` : "";
+          const content = renderInlineMarkdown(escapeHtml(cell.text));
+          return `<${tag}${attrStr}>${content}</${tag}>`;
+        })
+        .join("");
+      return `<tr>${cellsHtml}</tr>`;
+    })
+    .join("");
+
+  return `<table class="wikitable">${captionHtml}<tbody>${rowsHtml}</tbody></table>`;
+}
+
+function renderBlockquote(blockquoteModel) {
+  return `<blockquote class="wiki-blockquote">${renderInlineMarkdown(escapeHtml(blockquoteModel.body))}</blockquote>`;
+}
+
+export function renderFootnotes(footnotes) {
+  if (!footnotes || footnotes.length === 0) {
+    return "";
+  }
+
+  const items = footnotes
+    .map((note, index) => {
+      return `<li id="fn-${index + 1}"><span class="footnote__number">[${index + 1}]</span> ${renderInlineMarkdown(escapeHtml(note))}</li>`;
+    })
+    .join("");
+
+  return `
+    <section class="footnotes" aria-label="脚注">
+      <h3>脚注</h3>
+      <ol class="footnotes__list">${items}</ol>
+    </section>
+  `;
 }
 
 function renderCallout(calloutParagraph) {
@@ -130,6 +183,27 @@ function renderSectionParagraphs(paragraphs) {
     if (segments && typeof segments === "object" && !Array.isArray(segments) && segments.type === "callout") {
       flushList();
       parts.push(renderCallout(segments));
+      continue;
+    }
+
+    if (segments && typeof segments === "object" && !Array.isArray(segments) && segments.type === "table") {
+      flushList();
+      parts.push(renderWikiTable(segments));
+      continue;
+    }
+
+    if (segments && typeof segments === "object" && !Array.isArray(segments) && segments.type === "blockquote") {
+      flushList();
+      parts.push(renderBlockquote(segments));
+      continue;
+    }
+
+    if (segments && typeof segments === "object" && !Array.isArray(segments) && segments.type === "main-article") {
+      flushList();
+      const linkHtml = segments.segments
+        ? renderParagraphSegments(segments.segments)
+        : escapeHtml(segments.articleName);
+      parts.push(`<p class="main-article-link">詳細は「${linkHtml}」を参照。</p>`);
       continue;
     }
 
@@ -345,6 +419,7 @@ export function renderArticlePage(pageModel) {
               `;
             })
             .join("")}
+          ${renderFootnotes(pageModel.footnotes)}
         </div>
 
         <aside class="article-page__sidebar">
