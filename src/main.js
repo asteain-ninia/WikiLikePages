@@ -20,7 +20,6 @@ import {
   renderCategoryCards,
   renderDisambiguationPage,
   renderFeaturedArticle,
-  renderImplementationNotes,
   renderMissingPage,
   renderNotFoundPage,
   renderParticipationGuides,
@@ -46,7 +45,6 @@ const elements = {
   participationList: document.getElementById("participation-list"),
   processList: document.getElementById("process-list"),
   categoryGrid: document.getElementById("category-grid"),
-  implementationNotes: document.getElementById("implementation-notes"),
   previewArticle: document.getElementById("article-preview-card"),
   searchForm: document.getElementById("search-form"),
   searchInput: document.getElementById("search-input"),
@@ -64,13 +62,12 @@ const state = {
 
 function renderWelcomeSummary() {
   const { articleCount, categoryCount, latestUpdatedDate } = homePageModel.stats;
-  const contentLabel = contentBuildInfo.usingSamplesFallback ? "サンプル原稿" : "公開原稿";
   const fallbackNote = contentBuildInfo.usingSamplesFallback
-    ? " 現在は content/samples/ の原稿を表示確認用データとして読み込んでいます。"
+    ? "（現在はサンプル記事を表示しています）"
     : "";
   elements.welcomeSummary.textContent =
-    `現在 ${articleCount} 本の${contentLabel}と ${categoryCount} つの主要カテゴリを整理しています。` +
-    ` 最新更新日は ${formatDisplayDate(latestUpdatedDate)} です。${fallbackNote}`;
+    `現在 ${articleCount} 件の記事と ${categoryCount} つのカテゴリがあります。` +
+    ` 最終更新: ${formatDisplayDate(latestUpdatedDate)}。${fallbackNote}`;
 }
 
 function renderFeaturedState() {
@@ -93,7 +90,6 @@ function renderStaticSections() {
   elements.participationList.innerHTML = renderParticipationGuides(homePageModel.participationGuides);
   elements.processList.innerHTML = renderProcessSteps(homePageModel.processSteps);
   elements.categoryGrid.innerHTML = renderCategoryCards(homePageModel.categoryCards);
-  elements.implementationNotes.innerHTML = renderImplementationNotes(homePageModel.implementationNotes);
 }
 
 function clearSearchResults() {
@@ -136,7 +132,7 @@ function updatePageHeader(route) {
     const pageModel = buildArticlePageModel(wikiGraph, route.entryId);
     if (pageModel) {
       elements.pageHeading.textContent = pageModel.title;
-      elements.pageLead.textContent = `${pageModel.category}の記事詳細です。内部リンク、バックリンク、未作成ページ案内を確認できます。`;
+      elements.pageLead.textContent = pageModel.summary || `${pageModel.category}の記事です。`;
       document.title = `${pageModel.title} - WikiLikePages`;
       return;
     }
@@ -157,8 +153,8 @@ function updatePageHeader(route) {
   }
 
   elements.pageHeading.textContent = "メインページ";
-  elements.pageLead.textContent = "試作品を切り離し、正式実装の骨格へ置き換えた初期版です。";
-  document.title = "WikiLikePages - メインページ";
+  elements.pageLead.textContent = "架空世界の知識を集め、つなげる共同創作の百科事典です。";
+  document.title = "WikiLikePages";
 }
 
 function handleRandomButtonClick() {

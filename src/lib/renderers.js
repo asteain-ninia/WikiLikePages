@@ -439,10 +439,6 @@ export function renderProcessSteps(steps) {
   return steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("");
 }
 
-export function renderImplementationNotes(notes) {
-  return notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("");
-}
-
 export function renderArticlePage(pageModel) {
   return `
     <article class="article-page">

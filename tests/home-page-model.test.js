@@ -65,7 +65,6 @@ const fixtureSiteConfig = {
   ],
   participationGuides: [],
   processSteps: [],
-  implementationNotes: [],
 };
 
 test("formatDisplayDate converts ISO-like dates for display", () => {

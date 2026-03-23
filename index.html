@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>WikiLikePages - メインページ</title>
+  <title>WikiLikePages</title>
   <meta
     name="description"
-    content="WikiLikePages の正式実装を開始するためのWikipedia風メインページ。"
+    content="WikiLikePages — 共同創作のための百科事典。架空世界の国家・人物・歴史を記録し、つなげるWikiサイトです。"
   >
   <link rel="stylesheet" href="src/styles.css">
   <script>
@@ -23,7 +23,7 @@
         <span class="brand__mark" aria-hidden="true">W</span>
         <span class="brand__copy">
           <strong>WikiLikePages</strong>
-          <span>共同創作向けの静的Wiki基盤</span>
+          <span>共同創作の百科事典</span>
         </span>
       </a>
 
@@ -31,17 +31,16 @@
         <nav class="utility-nav" aria-label="補助ナビゲーション">
           <a href="#overview">メインページ</a>
           <a href="#featured">選り抜き記事</a>
-          <a href="#article-preview">記事プレビュー</a>
           <a href="#categories">カテゴリ</a>
-          <a href="#implementation">実装メモ</a>
+          <a href="#participation">参加案内</a>
         </nav>
 
         <form class="search-form" id="search-form" role="search">
-          <label class="sr-only" for="search-input">WikiLikePages を検索</label>
+          <label class="sr-only" for="search-input">記事を検索</label>
           <input
             id="search-input"
             type="search"
-            placeholder="WikiLikePages を検索"
+            placeholder="記事を検索"
             autocomplete="off"
           >
           <button type="submit">検索</button>
@@ -62,7 +61,7 @@
 
     <div class="page-title">
       <h1 id="page-heading">メインページ</h1>
-      <p id="page-lead">試作品を切り離し、正式実装の骨格へ置き換えた初期版です。</p>
+      <p id="page-lead">架空世界の知識を集め、つなげる共同創作の百科事典です。</p>
     </div>
 
     <section class="search-results" id="search-results" hidden aria-live="polite"></section>
@@ -76,12 +75,12 @@
           <p class="status-line" id="preview-status"></p>
         </div>
 
-        <aside class="welcome-box__aside" aria-labelledby="direction-heading">
-          <h2 id="direction-heading">現在の方針</h2>
-          <ul class="plain-list">
-            <li>試作品は <code>archive/prototypes/</code> に隔離済みです。</li>
-            <li>ルート配下は正式実装と設計資料だけを保持します。</li>
-            <li>検索、選択、一覧生成はテスト可能な純粋関数で組み立てます。</li>
+        <aside class="welcome-box__aside" aria-labelledby="about-heading">
+          <h2 id="about-heading">このWikiについて</h2>
+          <ul class="plain-list" id="about-list">
+            <li>架空世界の設定を記録・共有するための百科事典サイトです。</li>
+            <li>誰でも記事を投稿・編集でき、内部リンクで知識がつながります。</li>
+            <li>Markdown と MediaWiki 記法の両方に対応しています。</li>
           </ul>
         </aside>
       </section>
@@ -127,12 +126,6 @@
         <div class="portal-box__body category-grid" id="category-grid"></div>
       </section>
 
-      <section class="portal-box" id="implementation">
-        <h2>実装開始メモ</h2>
-        <div class="portal-box__body">
-          <ul class="plain-list" id="implementation-notes"></ul>
-        </div>
-      </section>
     </div>
 
     <section class="detail-view" id="detail-view" hidden aria-live="polite"></section>

@@ -27,28 +27,21 @@ export const siteConfig = {
   participationGuides: [
     {
       label: "標準投稿",
-      description: "Obsidian で編集し、Pull Request でレビューします。",
+      description: "Obsidian 等のエディタで記事を執筆し、Pull Request で提出します。",
     },
     {
       label: "簡易投稿",
-      description: "GitHub Issue Form から原稿要素だけを送り、管理者がPR化します。",
+      description: "GitHub Issue Form から原稿を送ると、管理者がレビュー後に反映します。",
     },
     {
-      label: "非GitHub参加",
-      description: "フォームかメールの投稿箱を受け口にし、正本は必ずGitHubへ集約します。",
+      label: "その他の方法",
+      description: "GitHub アカウントがない場合も、フォーム経由で投稿できます。",
     },
   ],
   processSteps: [
-    "Obsidian で記事原稿を整える",
-    "Pull Request または投稿箱経由で提出する",
-    "レビューでリンクと frontmatter を確認する",
-    "承認後にGitHub Pagesへ反映する",
-  ],
-  implementationNotes: [
-    "2026-03-17 時点でルート直下の試作品を archive/prototypes/ に隔離しました。",
-    "content/ 配下の Markdown 原稿を正規化して、トップページと記事詳細に流し込む取り込み層を追加しました。",
-    "検索、カテゴリ集計、内部リンク解決は純粋関数化し、Node 組み込みテストで検証します。",
-    "frontmatter がある原稿はそれを優先し、先頭テンプレートは最小限のカテゴリ推定に利用します。",
-    "次段階ではテンプレート変換拡張と HTML 生成フローを追加します。",
+    "記事原稿を Markdown または MediaWiki 記法で作成する",
+    "Pull Request または投稿フォームから提出する",
+    "レビューで内部リンクや書式を確認する",
+    "承認後、サイトに自動反映される",
   ],
 };
