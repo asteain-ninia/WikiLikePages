@@ -26,7 +26,9 @@ function formatDate(dateLike) {
   return new Date(dateLike).toISOString().slice(0, 10);
 }
 
-async function collectMarkdownFiles(directoryPath) {
+const CONTENT_FILE_EXTENSIONS = /\.(md|wiki|txt)$/i;
+
+async function collectContentFiles(directoryPath) {
   const directoryEntries = await readdir(directoryPath, { withFileTypes: true });
   const collected = [];
 
@@ -37,11 +39,11 @@ async function collectMarkdownFiles(directoryPath) {
 
     const absolutePath = path.join(directoryPath, entry.name);
     if (entry.isDirectory()) {
-      collected.push(...(await collectMarkdownFiles(absolutePath)));
+      collected.push(...(await collectContentFiles(absolutePath)));
       continue;
     }
 
-    if (entry.isFile() && /\.md$/i.test(entry.name)) {
+    if (entry.isFile() && CONTENT_FILE_EXTENSIONS.test(entry.name)) {
       collected.push(absolutePath);
     }
   }
@@ -103,7 +105,7 @@ function sortEntries(entries) {
 }
 
 async function buildContentData() {
-  const markdownFiles = await collectMarkdownFiles(contentRoot);
+  const markdownFiles = await collectContentFiles(contentRoot);
   const templateHandlers = await loadTemplateHandlers(templatesDir);
   const entries = [];
 
