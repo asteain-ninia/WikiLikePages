@@ -577,3 +577,139 @@ test("renderArticlePage renders MediaWiki bold across link segments", () => {
   assert.match(rendered, /<strong>/);
   assert.match(rendered, /太字リンク/);
 });
+
+test("renderArticlePage renders definition list paragraphs", () => {
+  const rendered = renderArticlePage({
+    id: "t1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    footnotes: [],
+    sections: [
+      {
+        heading: "概要",
+        anchorId: "section-概要",
+        paragraphs: [
+          {
+            type: "definition-list",
+            items: [
+              {
+                termSegments: [{ type: "text", value: "用語A" }],
+                descriptionSegments: [{ type: "text", value: "説明A" }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /wiki-dl/);
+  assert.match(rendered, /<dt>/);
+  assert.match(rendered, /<dd>/);
+  assert.match(rendered, /用語A/);
+  assert.match(rendered, /説明A/);
+});
+
+test("renderArticlePage renders horizontal rule paragraphs", () => {
+  const rendered = renderArticlePage({
+    id: "t1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    footnotes: [],
+    sections: [
+      {
+        heading: "概要",
+        anchorId: "section-概要",
+        paragraphs: [
+          [{ type: "text", value: "前のテキスト" }],
+          { type: "hr" },
+          [{ type: "text", value: "後のテキスト" }],
+        ],
+      },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /<hr/);
+});
+
+test("renderArticlePage renders poem paragraphs", () => {
+  const rendered = renderArticlePage({
+    id: "t1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    footnotes: [],
+    sections: [
+      {
+        heading: "概要",
+        anchorId: "section-概要",
+        paragraphs: [
+          {
+            type: "poem",
+            body: "春の風\n花が咲く",
+            bodySegments: [{ type: "text", value: "春の風\n花が咲く" }],
+          },
+        ],
+      },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /poem/);
+  assert.match(rendered, /春の風/);
+});
+
+test("renderArticlePage renders code-block paragraphs", () => {
+  const rendered = renderArticlePage({
+    id: "t1",
+    title: "テスト",
+    category: "記事",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    unresolvedLinkCount: 0,
+    backlinks: [],
+    footnotes: [],
+    sections: [
+      {
+        heading: "概要",
+        anchorId: "section-概要",
+        paragraphs: [
+          {
+            type: "code-block",
+            language: "javascript",
+            body: "const x = 1;",
+          },
+        ],
+      },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /code-block/);
+  assert.match(rendered, /const x = 1/);
+});

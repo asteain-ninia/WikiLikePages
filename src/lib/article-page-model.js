@@ -37,6 +37,13 @@ function collectTextsFromParagraph(paragraph) {
     texts.push(paragraph.caption);
   }
 
+  if (paragraph.items) {
+    for (const item of paragraph.items) {
+      if (item.term) texts.push(item.term);
+      if (item.description) texts.push(item.description);
+    }
+  }
+
   return texts;
 }
 
@@ -513,6 +520,24 @@ export function buildArticlePageModel(graph, entryId) {
       if (typeof paragraph === "object" && paragraph.type === "main-article") {
         const segments = buildWikiTextSegments(`[[${paragraph.articleName}]]`, graph);
         return { ...paragraph, segments };
+      }
+
+      if (typeof paragraph === "object" && paragraph.type === "poem") {
+        const bodySegments = buildWikiTextSegments(paragraph.body, graph);
+        return { ...paragraph, bodySegments };
+      }
+
+      if (typeof paragraph === "object" && paragraph.type === "definition-list") {
+        const items = paragraph.items.map((item) => ({
+          termSegments: buildWikiTextSegments(item.term, graph),
+          descriptionSegments: buildWikiTextSegments(item.description, graph),
+        }));
+        return { ...paragraph, items };
+      }
+
+      // hr, code-block, and other objects pass through unchanged
+      if (typeof paragraph === "object" && !Array.isArray(paragraph)) {
+        return paragraph;
       }
 
       const segments = buildWikiTextSegments(paragraph, graph);

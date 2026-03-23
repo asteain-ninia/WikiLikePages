@@ -708,6 +708,39 @@ html[data-file-protocol="true"] .protocol-warning {
   margin: 4px 0 8px;
 }
 
+.wiki-dl {
+  margin: 8px 0;
+}
+
+.wiki-dl dt {
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.wiki-dl dd {
+  margin-left: 24px;
+  margin-bottom: 4px;
+}
+
+.poem {
+  white-space: pre-line;
+  font-style: italic;
+  border-left: 3px solid var(--color-border);
+  padding: 8px 16px;
+  margin: 8px 0;
+  background: var(--color-surface-soft);
+}
+
+.code-block {
+  background: #f5f5f5;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  margin: 8px 0;
+  font-size: 0.9em;
+}
+
 @media (max-width: 960px) {
   .site-header__inner,
   .welcome-box,

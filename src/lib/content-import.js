@@ -549,6 +549,78 @@ function convertMediaWikiImageToEmbed(text) {
   );
 }
 
+function processNowiki(text) {
+  const placeholders = [];
+  const processed = text.replace(/<nowiki>([\s\S]*?)<\/nowiki>/gi, (_match, content) => {
+    const index = placeholders.length;
+    placeholders.push(content);
+    return `\x00NOWIKI:${index}\x00`;
+  });
+  return { text: processed, placeholders };
+}
+
+function restoreNowiki(text, placeholders) {
+  return text.replace(/\x00NOWIKI:(\d+)\x00/g, (_match, index) => {
+    const content = placeholders[Number(index)] ?? "";
+    return content
+      .replace(/\[\[/g, "&#91;&#91;")
+      .replace(/\]\]/g, "&#93;&#93;")
+      .replace(/\{\{/g, "&#123;&#123;")
+      .replace(/\}\}/g, "&#125;&#125;")
+      .replace(/'''/g, "&#39;&#39;&#39;")
+      .replace(/''/g, "&#39;&#39;")
+      .replace(/\*\*/g, "&#42;&#42;")
+      .replace(/`/g, "&#96;");
+  });
+}
+
+function stripMagicWords(text) {
+  return text.replace(/__(?:TOC|NOTOC|FORCETOC|NOEDITSECTION)__/g, "");
+}
+
+function processRedirect(text) {
+  const match = /^#REDIRECT\s*\[\[([^\]]+)\]\]/i.exec(text.trim());
+  if (match) {
+    return { isRedirect: true, redirectTarget: match[1].trim() };
+  }
+  return { isRedirect: false, redirectTarget: "" };
+}
+
+function parseInlineTagBlock(text, tagName) {
+  const parts = [];
+  let cursor = 0;
+  const openTag = `<${tagName}>`;
+  const closeTag = `</${tagName}>`;
+  const openTagAlt = `<${tagName} `;
+
+  while (cursor < text.length) {
+    let openIndex = text.indexOf(openTag, cursor);
+    const openIndexAlt = text.indexOf(openTagAlt, cursor);
+    if (openIndex === -1 && openIndexAlt === -1) {
+      parts.push({ type: "text", value: text.slice(cursor) });
+      break;
+    }
+    if (openIndex === -1) openIndex = Infinity;
+    const effectiveOpen = Math.min(openIndex, openIndexAlt === -1 ? Infinity : openIndexAlt);
+
+    if (effectiveOpen > cursor) {
+      parts.push({ type: "text", value: text.slice(cursor, effectiveOpen) });
+    }
+
+    const closeTagStart = text.indexOf(closeTag, effectiveOpen);
+    if (closeTagStart === -1) {
+      parts.push({ type: "text", value: text.slice(effectiveOpen) });
+      break;
+    }
+
+    const bodyStart = text.indexOf(">", effectiveOpen) + 1;
+    const body = text.slice(bodyStart, closeTagStart);
+    parts.push({ type: tagName, body });
+    cursor = closeTagStart + closeTag.length;
+  }
+  return parts;
+}
+
 function extractCategoryTags(text) {
   const tags = [];
   const cleaned = text.replace(
@@ -571,7 +643,10 @@ function buildParagraphs(lines) {
       return;
     }
 
-    paragraphs.push(currentParagraph);
+    const normalized = normalizeSectionText(currentParagraph);
+    if (normalized) {
+      paragraphs.push(normalized);
+    }
     currentParagraph = "";
   }
 
@@ -638,6 +713,61 @@ function buildParagraphs(lines) {
       continue;
     }
 
+    // Horizontal rule: ---- (4+ dashes)
+    if (/^-{4,}\s*$/.test(trimmed)) {
+      flushParagraph();
+      paragraphs.push({ type: "hr" });
+      lineIndex += 1;
+      continue;
+    }
+
+    // <poem> block
+    if (/<poem>/i.test(trimmed)) {
+      flushParagraph();
+      let content = "";
+      let poemEndIndex = lineIndex;
+      for (let i = lineIndex; i < lines.length; i += 1) {
+        content += (i > lineIndex ? "\n" : "") + lines[i];
+        poemEndIndex = i + 1;
+        if (/<\/poem>/i.test(lines[i])) {
+          break;
+        }
+      }
+      const poemMatch = /<poem>([\s\S]*?)<\/poem>/i.exec(content);
+      if (poemMatch) {
+        paragraphs.push({ type: "poem", body: poemMatch[1].trim() });
+      }
+      lineIndex = poemEndIndex;
+      continue;
+    }
+
+    // <syntaxhighlight> / <source> block
+    const codeTagMatch = /^<(syntaxhighlight|source)(?:\s[^>]*)?>/.exec(trimmed);
+    if (codeTagMatch) {
+      flushParagraph();
+      const closingTag = codeTagMatch[1];
+      let content = "";
+      let codeEndIndex = lineIndex;
+      for (let i = lineIndex; i < lines.length; i += 1) {
+        content += (i > lineIndex ? "\n" : "") + lines[i];
+        codeEndIndex = i + 1;
+        if (new RegExp(`</${closingTag}>`, "i").test(lines[i])) {
+          break;
+        }
+      }
+      const codeMatch = new RegExp(`<${closingTag}(?:\\s[^>]*)?>([\\s\\S]*?)</${closingTag}>`, "i").exec(content);
+      const langMatch = /lang\s*=\s*"?(\w+)"?/i.exec(content);
+      if (codeMatch) {
+        paragraphs.push({
+          type: "code-block",
+          language: langMatch ? langMatch[1] : "",
+          body: codeMatch[1],
+        });
+      }
+      lineIndex = codeEndIndex;
+      continue;
+    }
+
     const callout = parseCalloutLines(lines, lineIndex);
     if (callout) {
       flushParagraph();
@@ -663,6 +793,70 @@ function buildParagraphs(lines) {
         level: match[1].length,
         text: match[2].trim(),
       });
+      lineIndex += 1;
+      continue;
+    }
+
+    // Definition list: ; term / : description
+    const defTermMatch = /^;\s*(.+)$/.exec(trimmed);
+    if (defTermMatch) {
+      flushParagraph();
+      const termPart = defTermMatch[1];
+      // ; term : description on same line
+      const colonSplit = termPart.indexOf(" : ");
+      if (colonSplit !== -1) {
+        paragraphs.push({
+          type: "definition-list",
+          items: [{
+            term: normalizeSectionText(termPart.slice(0, colonSplit)),
+            description: normalizeSectionText(termPart.slice(colonSplit + 3)),
+          }],
+        });
+      } else {
+        // Collect consecutive : lines as descriptions
+        const term = normalizeSectionText(termPart);
+        const descriptions = [];
+        while (lineIndex + 1 < lines.length) {
+          const nextLine = lines[lineIndex + 1].trim();
+          const descMatch = /^:\s*(.+)$/.exec(nextLine);
+          if (!descMatch) break;
+          descriptions.push(normalizeSectionText(descMatch[1]));
+          lineIndex += 1;
+        }
+        paragraphs.push({
+          type: "definition-list",
+          items: [{
+            term,
+            description: descriptions.join("\n"),
+          }],
+        });
+      }
+      lineIndex += 1;
+      continue;
+    }
+
+    // Standalone : line (indent/continuation) — treat as definition description
+    const standaloneDescMatch = /^:\s*(.+)$/.exec(trimmed);
+    if (standaloneDescMatch) {
+      flushParagraph();
+      const text = normalizeSectionText(standaloneDescMatch[1]);
+      if (text) {
+        paragraphs.push(`　${text}`);
+      }
+      lineIndex += 1;
+      continue;
+    }
+
+    // Nested/mixed lists: **, ##, *#, #* etc.
+    const nestedBulletMatch = /^([*#]{2,})\s+(.+)$/.exec(trimmed);
+    if (nestedBulletMatch) {
+      flushParagraph();
+      const depth = nestedBulletMatch[1].length;
+      const itemText = normalizeSectionText(nestedBulletMatch[2]);
+      if (itemText) {
+        const indent = "　".repeat(depth - 1);
+        paragraphs.push(`${indent}・${itemText}`);
+      }
       lineIndex += 1;
       continue;
     }
@@ -730,14 +924,11 @@ export function parseMarkdownSections(sourceText) {
 
   for (const token of tokens) {
     if (typeof token === "string") {
-      const paragraph = normalizeSectionText(token);
-      if (paragraph) {
-        currentSection.paragraphs.push(paragraph);
-      }
+      currentSection.paragraphs.push(token);
       continue;
     }
 
-    if (token.type === "callout" || token.type === "table" || token.type === "blockquote" || token.type === "main-article") {
+    if (typeof token === "object" && token.type !== "heading") {
       currentSection.paragraphs.push(token);
       continue;
     }
@@ -816,6 +1007,13 @@ function collectParagraphTexts(paragraph) {
 
   if (paragraph.caption) {
     texts.push(paragraph.caption);
+  }
+
+  if (paragraph.items) {
+    for (const item of paragraph.items) {
+      if (item.term) texts.push(item.term);
+      if (item.description) texts.push(item.description);
+    }
   }
 
   return texts;
@@ -909,8 +1107,12 @@ export function buildArticleRecord({
   templateHandlers,
 }) {
   const { data: frontmatter, body: sourceWithoutFrontmatter } = parseFrontmatter(sourceText);
+  const { isRedirect, redirectTarget } = processRedirect(sourceWithoutFrontmatter);
+  const { text: nowikiProcessed, placeholders: nowikiPlaceholders } =
+    processNowiki(sourceWithoutFrontmatter);
+  const magicStripped = stripMagicWords(nowikiProcessed);
   const { templates, body: bodyWithoutLeadingTemplates } =
-    extractLeadingTemplates(sourceWithoutFrontmatter);
+    extractLeadingTemplates(magicStripped);
   const { text: bodyWithoutCategories, categoryTags } =
     extractCategoryTags(bodyWithoutLeadingTemplates);
   const bodyWithImages = convertMediaWikiImageToEmbed(bodyWithoutCategories);
@@ -920,9 +1122,10 @@ export function buildArticleRecord({
     (_match, articleName) => `\x00MAIN:${articleName.trim()}\x00`
   );
   const cleanedBody = stripInlineTemplates(bodyWithMainConverted).trim();
-  const sections = parseMarkdownSections(cleanedBody);
+  const restoredBody = restoreNowiki(cleanedBody, nowikiPlaceholders);
+  const sections = parseMarkdownSections(restoredBody);
   const leadParagraphs = buildSummaryParagraphs(sections);
-  const title = inferTitle(frontmatter, leadParagraphs, fileBasename);
+  const title = isRedirect ? redirectTarget : inferTitle(frontmatter, leadParagraphs, fileBasename);
   const aliases = buildUniqueList(
     [
       ...(Array.isArray(frontmatter.aliases) ? frontmatter.aliases : []),
@@ -973,6 +1176,8 @@ export function buildArticleRecord({
     templateModels: buildTemplateModels(templates, templateHandlers),
     footnotes,
     sections,
+    isRedirect,
+    redirectTarget,
     draft: frontmatter.draft === true,
     isSample: relativePath.replace(/\\/g, "/").startsWith("samples/"),
   };

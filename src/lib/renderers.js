@@ -130,6 +130,33 @@ function renderBlockquote(blockquoteModel) {
   return `<blockquote class="wiki-blockquote">${content}</blockquote>`;
 }
 
+function renderDefinitionList(model) {
+  const itemsHtml = model.items
+    .map((item) => {
+      const termHtml = item.termSegments
+        ? renderParagraphSegments(item.termSegments)
+        : renderInlineMarkdown(escapeHtml(item.term));
+      const descHtml = item.descriptionSegments
+        ? renderParagraphSegments(item.descriptionSegments)
+        : renderInlineMarkdown(escapeHtml(item.description));
+      return `<dt>${termHtml}</dt><dd>${descHtml}</dd>`;
+    })
+    .join("");
+  return `<dl class="wiki-dl">${itemsHtml}</dl>`;
+}
+
+function renderPoem(model) {
+  const content = model.bodySegments
+    ? renderParagraphSegments(model.bodySegments)
+    : renderInlineMarkdown(escapeHtml(model.body));
+  return `<div class="poem">${content}</div>`;
+}
+
+function renderCodeBlock(model) {
+  const langAttr = model.language ? ` data-language="${escapeHtml(model.language)}"` : "";
+  return `<pre class="code-block"${langAttr}><code>${escapeHtml(model.body)}</code></pre>`;
+}
+
 export function renderFootnotes(footnotes) {
   if (!footnotes || footnotes.length === 0) {
     return "";
@@ -211,6 +238,30 @@ function renderSectionParagraphs(paragraphs) {
         ? renderParagraphSegments(segments.segments)
         : escapeHtml(segments.articleName);
       parts.push(`<p class="main-article-link">詳細は「${linkHtml}」を参照。</p>`);
+      continue;
+    }
+
+    if (segments && typeof segments === "object" && !Array.isArray(segments) && segments.type === "definition-list") {
+      flushList();
+      parts.push(renderDefinitionList(segments));
+      continue;
+    }
+
+    if (segments && typeof segments === "object" && !Array.isArray(segments) && segments.type === "hr") {
+      flushList();
+      parts.push("<hr>");
+      continue;
+    }
+
+    if (segments && typeof segments === "object" && !Array.isArray(segments) && segments.type === "poem") {
+      flushList();
+      parts.push(renderPoem(segments));
+      continue;
+    }
+
+    if (segments && typeof segments === "object" && !Array.isArray(segments) && segments.type === "code-block") {
+      flushList();
+      parts.push(renderCodeBlock(segments));
       continue;
     }
 

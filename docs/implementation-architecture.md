@@ -132,6 +132,9 @@ MediaWiki 記法と Markdown 記法は同一ファイル内で混在してよい
                   │
 * 項目           ─┤──→  "・項目" (リスト段落)
 - 項目           ─┘
+** ネスト項目    ────→  "　・項目" (インデント付きリスト段落)
+
+; 用語 : 説明   ────→  { type: "definition-list", items[] }
 
 {| ... |}        ────→  { type: "table", ... } (テーブル段落)
 
@@ -139,9 +142,21 @@ MediaWiki 記法と Markdown 記法は同一ファイル内で混在してよい
 
 <blockquote>     ────→  { type: "blockquote", ... } (引用段落)
 
+<nowiki>         ────→  リテラルテキスト (記法解釈を抑制)
+
+<poem>           ────→  { type: "poem", ... } (改行保持ブロック)
+
+<syntaxhighlight>────→  { type: "code-block", ... } (整形済みテキスト)
+
+----             ────→  { type: "hr" } (水平線)
+
 [[Category:X]]   ────→  tags[] に追加
 
 [[ファイル:X]]    ────→  画像埋め込みセグメント (embed)
+
+#REDIRECT [[X]]  ────→  aliases に追加 (リダイレクト元として処理)
+
+__TOC__ etc.     ────→  除去 (目次制御は Phase 2)
 ```
 
 ### 3.4 Template Plugin System (`src/lib/template-registry.js`, `src/lib/templates/`)

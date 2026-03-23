@@ -424,3 +424,124 @@ test("buildArticleRecord extracts relatedTitles from blockquote body", () => {
 
   assert.ok(article.relatedTitles.includes("引用リンク先"));
 });
+
+test("parseMarkdownSections parses definition lists (; and :)", () => {
+  const article = buildArticleRecord({
+    relativePath: "test.wiki",
+    fileBasename: "テスト",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    sourceText: `本文。\n\n; 用語A\n: 説明A\n; 用語B\n: 説明B`,
+  });
+
+  const section = article.sections[0];
+  const dls = section.paragraphs.filter((p) => p.type === "definition-list");
+  assert.ok(dls.length >= 1, "definition-list paragraphs should exist");
+  assert.equal(dls[0].items[0].term, "用語A");
+  assert.equal(dls[0].items[0].description, "説明A");
+  const lastDl = dls[dls.length - 1];
+  assert.equal(lastDl.items[lastDl.items.length - 1].term, "用語B");
+});
+
+test("parseMarkdownSections parses horizontal rule (----)", () => {
+  const article = buildArticleRecord({
+    relativePath: "test.wiki",
+    fileBasename: "テスト",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    sourceText: `前の段落。\n\n----\n\n後の段落。`,
+  });
+
+  const section = article.sections[0];
+  const hr = section.paragraphs.find((p) => p.type === "hr");
+  assert.ok(hr, "hr paragraph should exist");
+});
+
+test("buildArticleRecord handles <nowiki> to suppress wiki parsing", () => {
+  const article = buildArticleRecord({
+    relativePath: "test.wiki",
+    fileBasename: "テスト",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    sourceText: `本文。<nowiki>[[リンクではない]]</nowiki>と通常テキスト。`,
+  });
+
+  const section = article.sections[0];
+  const texts = section.paragraphs.join(" ");
+  assert.ok(!texts.includes("[[リンクではない]]"), "nowiki content should not contain raw wikilink brackets");
+  assert.ok(!article.relatedTitles.includes("リンクではない"), "nowiki content should not be parsed as link");
+});
+
+test("buildArticleRecord handles #REDIRECT", () => {
+  const article = buildArticleRecord({
+    relativePath: "旧名.wiki",
+    fileBasename: "旧名",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    sourceText: `#REDIRECT [[新名]]`,
+  });
+
+  assert.equal(article.isRedirect, true);
+  assert.equal(article.redirectTarget, "新名");
+});
+
+test("buildArticleRecord strips magic words", () => {
+  const article = buildArticleRecord({
+    relativePath: "test.wiki",
+    fileBasename: "テスト",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    sourceText: `__TOC__\n本文テキスト。\n__NOTOC__`,
+  });
+
+  const allText = article.sections.flatMap((s) => s.paragraphs).join(" ");
+  assert.ok(!allText.includes("__TOC__"), "magic words should be stripped");
+  assert.ok(!allText.includes("__NOTOC__"), "magic words should be stripped");
+  assert.ok(allText.includes("本文テキスト"), "normal text should remain");
+});
+
+test("parseMarkdownSections parses nested lists (** and ##)", () => {
+  const article = buildArticleRecord({
+    relativePath: "test.wiki",
+    fileBasename: "テスト",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    sourceText: `本文。\n\n* 項目A\n** サブ項目A1\n** サブ項目A2\n* 項目B`,
+  });
+
+  const section = article.sections[0];
+  const paragraphs = section.paragraphs.filter((p) => typeof p === "string");
+  const hasNested = paragraphs.some((p) => p.includes("　・サブ項目A1"));
+  assert.ok(hasNested, "nested list items should have indentation prefix");
+});
+
+test("parseMarkdownSections parses <poem> blocks", () => {
+  const article = buildArticleRecord({
+    relativePath: "test.wiki",
+    fileBasename: "テスト",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    sourceText: `本文。\n\n<poem>\n春の風\n花が咲く\n</poem>`,
+  });
+
+  const section = article.sections[0];
+  const poem = section.paragraphs.find((p) => p.type === "poem");
+  assert.ok(poem, "poem paragraph should exist");
+  assert.ok(poem.body.includes("春の風"), "poem body should contain content");
+});
+
+test("parseMarkdownSections parses <syntaxhighlight> blocks", () => {
+  const article = buildArticleRecord({
+    relativePath: "test.wiki",
+    fileBasename: "テスト",
+    created: "2026-03-20",
+    updated: "2026-03-23",
+    sourceText: `本文。\n\n<syntaxhighlight lang="javascript">\nconst x = 1;\n</syntaxhighlight>`,
+  });
+
+  const section = article.sections[0];
+  const code = section.paragraphs.find((p) => p.type === "code-block");
+  assert.ok(code, "code-block paragraph should exist");
+  assert.equal(code.language, "javascript");
+  assert.ok(code.body.includes("const x = 1"), "code body should contain content");
+});
