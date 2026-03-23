@@ -282,6 +282,18 @@ test("parseMarkdownSections parses blockquote elements", () => {
   assert.equal(sections[0].paragraphs[2], "後文。");
 });
 
+test("parseMarkdownSections parses inline blockquotes mid-line", () => {
+  const sections = parseMarkdownSections(
+    "<blockquote>引用A</blockquote>中間テキスト。<blockquote>引用B</blockquote>"
+  );
+
+  assert.equal(sections[0].paragraphs[0].type, "blockquote");
+  assert.equal(sections[0].paragraphs[0].body, "引用A");
+  assert.equal(sections[0].paragraphs[1], "中間テキスト。");
+  assert.equal(sections[0].paragraphs[2].type, "blockquote");
+  assert.equal(sections[0].paragraphs[2].body, "引用B");
+});
+
 test("parseMarkdownSections parses MediaWiki list items (* item)", () => {
   const sections = parseMarkdownSections("* 項目A\n* [[項目B]]");
 

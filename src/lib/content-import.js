@@ -499,35 +499,33 @@ function parseCellAttrsAndText(raw) {
   return { attrs, text };
 }
 
-function parseBlockquoteLines(lines, startIndex) {
-  const firstLine = lines[startIndex].trim();
-  if (!firstLine.startsWith("<blockquote>")) {
-    return null;
-  }
+function extractBlockquotes(text) {
+  const parts = [];
+  let cursor = 0;
 
-  let content = "";
-  let endIndex = startIndex;
-
-  for (let i = startIndex; i < lines.length; i += 1) {
-    content += (i > startIndex ? "\n" : "") + lines[i];
-    endIndex = i + 1;
-    if (lines[i].includes("</blockquote>")) {
+  while (cursor < text.length) {
+    const openIndex = text.indexOf("<blockquote>", cursor);
+    if (openIndex === -1) {
+      parts.push({ type: "text", value: text.slice(cursor) });
       break;
     }
+
+    if (openIndex > cursor) {
+      parts.push({ type: "text", value: text.slice(cursor, openIndex) });
+    }
+
+    const closeIndex = text.indexOf("</blockquote>", openIndex);
+    if (closeIndex === -1) {
+      parts.push({ type: "text", value: text.slice(openIndex) });
+      break;
+    }
+
+    const body = text.slice(openIndex + "<blockquote>".length, closeIndex).trim();
+    parts.push({ type: "blockquote", body });
+    cursor = closeIndex + "</blockquote>".length;
   }
 
-  const bodyMatch = /<blockquote>([\s\S]*?)<\/blockquote>/i.exec(content);
-  if (!bodyMatch) {
-    return null;
-  }
-
-  const remaining = content.slice(content.indexOf("</blockquote>") + "</blockquote>".length).trim();
-  return {
-    type: "blockquote",
-    body: bodyMatch[1].trim(),
-    trailing: remaining,
-    endIndex,
-  };
+  return parts;
 }
 
 function processFootnotes(text) {
@@ -602,20 +600,37 @@ function buildParagraphs(lines) {
       }
     }
 
-    if (trimmed.startsWith("<blockquote>")) {
+    if (trimmed.includes("<blockquote>")) {
       flushParagraph();
-      const blockquote = parseBlockquoteLines(lines, lineIndex);
-      if (blockquote) {
-        paragraphs.push({
-          type: "blockquote",
-          body: blockquote.body,
-        });
-        if (blockquote.trailing) {
-          currentParagraph = blockquote.trailing;
+      // Collect all lines until all blockquotes on this line/block are closed
+      let content = "";
+      let blockEndIndex = lineIndex;
+      for (let i = lineIndex; i < lines.length; i += 1) {
+        content += (i > lineIndex ? "\n" : "") + lines[i];
+        blockEndIndex = i + 1;
+        // Check if all opened blockquotes are closed
+        const opens = (content.match(/<blockquote>/gi) || []).length;
+        const closes = (content.match(/<\/blockquote>/gi) || []).length;
+        if (closes >= opens) {
+          break;
         }
-        lineIndex = blockquote.endIndex;
-        continue;
       }
+
+      const parts = extractBlockquotes(content);
+      for (const part of parts) {
+        if (part.type === "blockquote") {
+          flushParagraph();
+          paragraphs.push({ type: "blockquote", body: part.body });
+        } else {
+          const trimmedPart = part.value.trim();
+          if (trimmedPart) {
+            currentParagraph = mergeParagraphLine(currentParagraph, trimmedPart);
+          }
+        }
+      }
+      flushParagraph();
+      lineIndex = blockEndIndex;
+      continue;
     }
 
     if (/^<references\s*\/>$/i.test(trimmed)) {
