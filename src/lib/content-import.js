@@ -775,8 +775,9 @@ function collectParagraphTexts(paragraph) {
 
   const texts = [];
 
-  if (paragraph.type === "table") {
-    for (const row of paragraph.rows ?? []) {
+  // Collect text from table cells
+  if (paragraph.rows) {
+    for (const row of paragraph.rows) {
       for (const cell of row) {
         if (cell.text) {
           texts.push(cell.text);
@@ -785,16 +786,21 @@ function collectParagraphTexts(paragraph) {
     }
   }
 
-  if (paragraph.type === "blockquote" && paragraph.body) {
+  // Collect from known text-bearing fields
+  if (paragraph.body) {
     texts.push(paragraph.body);
   }
 
-  if (paragraph.type === "callout" && paragraph.body) {
-    texts.push(paragraph.body);
-  }
-
-  if (paragraph.type === "main-article" && paragraph.articleName) {
+  if (paragraph.articleName) {
     texts.push(`[[${paragraph.articleName}]]`);
+  }
+
+  if (paragraph.title && paragraph.type !== "callout") {
+    texts.push(paragraph.title);
+  }
+
+  if (paragraph.caption) {
+    texts.push(paragraph.caption);
   }
 
   return texts;

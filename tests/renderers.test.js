@@ -544,3 +544,36 @@ test("renderArticlePage renders footnotes section", () => {
   assert.match(rendered, /脚注のテスト/);
   assert.match(rendered, /footnotes/);
 });
+
+test("renderArticlePage renders MediaWiki bold across link segments", () => {
+  const rendered = renderArticlePage({
+    id: "test",
+    title: "テスト",
+    category: "記事",
+    created: "2026-01-01",
+    updated: "2026-01-01",
+    summary: "テスト",
+    aliases: [],
+    tags: [],
+    footnotes: [],
+    backlinks: [],
+    unresolvedLinkCount: 0,
+    sections: [
+      {
+        heading: "概要",
+        anchorId: "section-概要",
+        paragraphs: [
+          [
+            { type: "text", value: "・「'''" },
+            { type: "link", status: "resolved", href: "#!article/a", label: "太字リンク", title: "太字リンク" },
+            { type: "text", value: "'''」" },
+          ],
+        ],
+      },
+    ],
+    templateModels: [],
+  });
+
+  assert.match(rendered, /<strong>/);
+  assert.match(rendered, /太字リンク/);
+});

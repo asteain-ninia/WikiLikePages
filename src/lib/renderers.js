@@ -58,10 +58,10 @@ function renderRelatedTitles(titles) {
 }
 
 function renderParagraphSegments(segments) {
-  return segments
+  const raw = segments
     .map((segment) => {
       if (segment.type === "text") {
-        return renderInlineMarkdown(escapeHtml(segment.value));
+        return escapeHtml(segment.value);
       }
 
       if (segment.type === "embed") {
@@ -78,6 +78,8 @@ function renderParagraphSegments(segments) {
       return `<a class="${classNames.join(" ")}" href="${escapeHtml(segment.href)}">${escapeHtml(segment.label)}</a>`;
     })
     .join("");
+
+  return renderInlineMarkdown(raw);
 }
 
 function isListItemSegments(segments) {
