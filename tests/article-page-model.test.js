@@ -431,6 +431,38 @@ test("buildArticlePageModel resolves wikilinks in table cells", () => {
   assert.equal(linkSegment.status, "resolved");
 });
 
+test("buildWikiGraph registers backlinks from templateModels wikilinks", () => {
+  const entries = [
+    {
+      id: "source",
+      title: "ソース",
+      updated: "2026-01-01",
+      sections: [
+        {
+          sourceHeading: "",
+          heading: "概要",
+          paragraphs: ["本文"],
+        },
+      ],
+      templateModels: [
+        {
+          type: "infobox",
+          heading: "テスト",
+          rows: [{ label: "関連", value: "[[白磁海]]の近海" }],
+        },
+      ],
+    },
+    ...fixtureEntries,
+  ];
+
+  const graph = buildWikiGraph(entries);
+  const backlinks = graph.backlinksById["sea"] ?? [];
+  assert.ok(
+    backlinks.some((entry) => entry.id === "source"),
+    "templateModels infobox row wikilink should register a backlink"
+  );
+});
+
 test("buildWikiGraph registers backlinks from footnote wikilinks", () => {
   const entries = [
     {

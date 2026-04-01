@@ -1138,11 +1138,13 @@ export function buildArticleRecord({
     ...categoryTags,
     inferCategory(frontmatter, templates, title),
   ]);
-  const allSourceText = sections
-    .flatMap((section) => [
+  const allSourceText = [
+    ...sections.flatMap((section) => [
       section.sourceHeading,
       ...section.paragraphs.flatMap(collectParagraphTexts),
-    ])
+    ]),
+    ...footnotes,
+  ]
     .filter(Boolean)
     .join("\n");
   const relatedTitles = buildUniqueList(extractWikiLinkTargets(allSourceText), 6);

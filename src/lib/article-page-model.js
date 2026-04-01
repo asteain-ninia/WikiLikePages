@@ -47,6 +47,33 @@ function collectTextsFromParagraph(paragraph) {
   return texts;
 }
 
+function collectAllTextsFromEntry(entry) {
+  const texts = [];
+
+  for (const section of entry.sections ?? []) {
+    texts.push(
+      ...[section.sourceHeading, ...(section.paragraphs ?? [])].flatMap(
+        (paragraph) => collectTextsFromParagraph(paragraph)
+      )
+    );
+  }
+
+  for (const footnote of entry.footnotes ?? []) {
+    texts.push(footnote);
+  }
+
+  for (const model of entry.templateModels ?? []) {
+    if (model.rows) {
+      for (const row of model.rows) {
+        if (row.value) texts.push(row.value);
+      }
+    }
+    if (model.text) texts.push(model.text);
+  }
+
+  return texts.filter(Boolean);
+}
+
 function normalizeLookupValue(value) {
   return String(value).trim().toLocaleLowerCase("ja-JP");
 }
@@ -346,21 +373,7 @@ export function buildWikiGraph(entries) {
   }
 
   for (const entry of entries) {
-    const allTexts = [];
-
-    for (const section of entry.sections ?? []) {
-      allTexts.push(
-        ...[section.sourceHeading, ...(section.paragraphs ?? [])].flatMap(
-          (paragraph) => collectTextsFromParagraph(paragraph)
-        )
-      );
-    }
-
-    for (const footnote of entry.footnotes ?? []) {
-      allTexts.push(footnote);
-    }
-
-    for (const text of allTexts.filter(Boolean)) {
+    for (const text of collectAllTextsFromEntry(entry)) {
       for (const link of extractWikiLinks(text)) {
         if (link.isEmbed) {
           continue;
