@@ -164,7 +164,10 @@ export function renderFootnotes(footnotes) {
 
   const items = footnotes
     .map((note, index) => {
-      return `<li id="fn-${index + 1}"><span class="footnote__number">[${index + 1}]</span> ${renderInlineMarkdown(escapeHtml(note))}</li>`;
+      const body = note.segments
+        ? renderInlineMarkdown(renderParagraphSegments(note.segments))
+        : renderInlineMarkdown(escapeHtml(note));
+      return `<li id="fn-${index + 1}"><span class="footnote__number">[${index + 1}]</span> ${body}</li>`;
     })
     .join("");
 

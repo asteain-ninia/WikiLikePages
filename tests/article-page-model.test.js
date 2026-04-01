@@ -431,6 +431,62 @@ test("buildArticlePageModel resolves wikilinks in table cells", () => {
   assert.equal(linkSegment.status, "resolved");
 });
 
+test("buildWikiGraph registers backlinks from footnote wikilinks", () => {
+  const entries = [
+    {
+      id: "source",
+      title: "ソース",
+      updated: "2026-01-01",
+      sections: [
+        {
+          sourceHeading: "",
+          heading: "概要",
+          paragraphs: ["本文[1]"],
+        },
+      ],
+      footnotes: ["[[白磁海]]に関する注釈"],
+    },
+    ...fixtureEntries,
+  ];
+
+  const graph = buildWikiGraph(entries);
+  const backlinks = graph.backlinksById["sea"] ?? [];
+  assert.ok(
+    backlinks.some((entry) => entry.id === "source"),
+    "footnote wikilink should register a backlink"
+  );
+});
+
+test("buildArticlePageModel resolves wikilinks in footnotes", () => {
+  const entries = [
+    {
+      id: "withFootnote",
+      title: "脚注記事",
+      category: "記事",
+      created: "2026-01-01",
+      updated: "2026-01-01",
+      summary: "",
+      sections: [
+        {
+          sourceHeading: "",
+          heading: "概要",
+          paragraphs: ["本文[1]"],
+        },
+      ],
+      footnotes: ["[[白磁海]]についての注釈"],
+    },
+    ...fixtureEntries,
+  ];
+
+  const graph = buildWikiGraph(entries);
+  const model = buildArticlePageModel(graph, "withFootnote");
+  assert.equal(model.footnotes.length, 1);
+  assert.ok(model.footnotes[0].segments, "footnote should have segments");
+  const linkSegment = model.footnotes[0].segments.find((s) => s.type === "link");
+  assert.ok(linkSegment, "footnote should contain a resolved link segment");
+  assert.equal(linkSegment.status, "resolved");
+});
+
 test("buildArticlePageModel resolves wikilinks in blockquote body", () => {
   const entries = [
     {

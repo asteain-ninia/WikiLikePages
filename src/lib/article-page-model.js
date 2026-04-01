@@ -346,31 +346,40 @@ export function buildWikiGraph(entries) {
   }
 
   for (const entry of entries) {
+    const allTexts = [];
+
     for (const section of entry.sections ?? []) {
-      const sourceTexts = [section.sourceHeading, ...(section.paragraphs ?? [])].flatMap(
-        (paragraph) => collectTextsFromParagraph(paragraph)
-      ).filter(Boolean);
-      for (const paragraph of sourceTexts) {
-        for (const link of extractWikiLinks(paragraph)) {
-          if (link.isEmbed) {
-            continue;
-          }
+      allTexts.push(
+        ...[section.sourceHeading, ...(section.paragraphs ?? [])].flatMap(
+          (paragraph) => collectTextsFromParagraph(paragraph)
+        )
+      );
+    }
 
-          const resolution = resolveArticleReference(referenceIndex, entryById, link.pageTitle);
+    for (const footnote of entry.footnotes ?? []) {
+      allTexts.push(footnote);
+    }
 
-          if (resolution.type === "article") {
-            const backlinks = backlinkMapsById.get(resolution.entry.id);
-            backlinks?.set(entry.id, createEntrySummary(entry));
-            continue;
-          }
-
-          if (resolution.type === "ambiguous") {
-            registerDisambiguationTitle(link.pageTitle, resolution.candidates, entry);
-            continue;
-          }
-
-          registerMissingTitle(link.pageTitle, entry);
+    for (const text of allTexts.filter(Boolean)) {
+      for (const link of extractWikiLinks(text)) {
+        if (link.isEmbed) {
+          continue;
         }
+
+        const resolution = resolveArticleReference(referenceIndex, entryById, link.pageTitle);
+
+        if (resolution.type === "article") {
+          const backlinks = backlinkMapsById.get(resolution.entry.id);
+          backlinks?.set(entry.id, createEntrySummary(entry));
+          continue;
+        }
+
+        if (resolution.type === "ambiguous") {
+          registerDisambiguationTitle(link.pageTitle, resolution.candidates, entry);
+          continue;
+        }
+
+        registerMissingTitle(link.pageTitle, entry);
       }
     }
   }
@@ -580,7 +589,10 @@ export function buildArticlePageModel(graph, entryId) {
     ...entry,
     aliases: entry.aliases ?? [],
     tags: entry.tags ?? [],
-    footnotes: entry.footnotes ?? [],
+    footnotes: (entry.footnotes ?? []).map((note) => ({
+      text: note,
+      segments: buildWikiTextSegments(note, graph),
+    })),
     sections,
     templateModels,
     backlinks: graph.backlinksById[entry.id] ?? [],
