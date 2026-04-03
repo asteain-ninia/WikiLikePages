@@ -255,6 +255,22 @@ function bindEvents() {
 
   elements.randomButton.addEventListener("click", handleRandomButtonClick);
   window.addEventListener("hashchange", renderRoute);
+
+  elements.detailView.addEventListener("click", (event) => {
+    const tocLink = event.target.closest(".toc__list a");
+    if (!tocLink) {
+      return;
+    }
+
+    event.preventDefault();
+    const targetId = tocLink.getAttribute("href")?.slice(1);
+    if (targetId) {
+      const target = document.getElementById(targetId);
+      if (target) {
+        target.scrollIntoView({ block: "start", behavior: "smooth" });
+      }
+    }
+  });
 }
 
 renderStaticSections();
