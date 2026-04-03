@@ -563,14 +563,14 @@ function restoreNowiki(text, placeholders) {
   return text.replace(/\x00NOWIKI:(\d+)\x00/g, (_match, index) => {
     const content = placeholders[Number(index)] ?? "";
     return content
-      .replace(/\[\[/g, "&#91;&#91;")
-      .replace(/\]\]/g, "&#93;&#93;")
-      .replace(/\{\{/g, "&#123;&#123;")
-      .replace(/\}\}/g, "&#125;&#125;")
-      .replace(/'''/g, "&#39;&#39;&#39;")
-      .replace(/''/g, "&#39;&#39;")
-      .replace(/\*\*/g, "&#42;&#42;")
-      .replace(/`/g, "&#96;");
+      .replace(/\[/g, "\uE010")
+      .replace(/\]/g, "\uE011")
+      .replace(/\{/g, "\uE012")
+      .replace(/\}/g, "\uE013")
+      .replace(/'/g, "\uE014")
+      .replace(/\*/g, "\uE015")
+      .replace(/`/g, "\uE016")
+      .replace(/_/g, "\uE017");
   });
 }
 

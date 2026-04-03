@@ -50,7 +50,15 @@ export function renderInlineMarkdown(escapedText) {
     )
     .replace(/&lt;(small|sup|sub)&gt;/gi, "<$1>")
     .replace(/&lt;\/(small|sup|sub)&gt;/gi, "</$1>")
-    .replace(/&lt;br\s*\/?&gt;/gi, "<br>");
+    .replace(/&lt;br\s*\/?&gt;/gi, "<br>")
+    .replace(/\uE010/g, "[")
+    .replace(/\uE011/g, "]")
+    .replace(/\uE012/g, "{")
+    .replace(/\uE013/g, "}")
+    .replace(/\uE014/g, "&#39;")
+    .replace(/\uE015/g, "&#42;")
+    .replace(/\uE016/g, "&#96;")
+    .replace(/\uE017/g, "&#95;");
 }
 
 function renderRelatedTitles(titles) {
